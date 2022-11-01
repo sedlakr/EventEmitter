@@ -20,7 +20,7 @@ Run command `npm install`
 
 #### .create(context)
 
-It's method for creating new emitter with given `context`. Context can be any object od any function. 
+It's method for creating new emitter with given `context`. Context can be any object od any function.
 It is use for manipulation with handlers. More information in section "How to use it"
 
 #### .event(name, params)
@@ -37,15 +37,15 @@ timeout due to other events, requests or notify.
 #### .request(name, params)
 
 Call request with given `name` and send through given `params` and get return from this call.
-This is similar to `.event()` but this function return value. This is a really special method and EventEmitter check if 
+This is similar to `.event()` but this function return value. This is a really special method and EventEmitter check if
 it's right called. If `.request()` has not any handler, than fail because without handler you can not get return value. Call
 also fail if there are more handlers than one, because you can not get return value from more functions.
 
 #### .demand(name, params)
 
 Call request with given `name` and send through given `params` and get return from this call.
-This is similar to `.request()` but this function return value and event return `undefined`. If `.demand()` has not 
-any handler, than do not fail and return `undefined`. Call also fail if there are more handlers than one, 
+This is similar to `.request()` but this function return value and event return `undefined`. If `.demand()` has not
+any handler, than do not fail and return `undefined`. Call also fail if there are more handlers than one,
 because you can not get return value from more functions.
 
 #### .subscribe()
@@ -75,7 +75,7 @@ You can turn on debug mode and filter some specific events. Other events will be
 
 ### How to use it
 
-You can use this library in global way. There is global variable `EventEmitter`. 
+You can use this library in global way. There is global variable `EventEmitter`.
 
 #### Example 1
 
@@ -88,7 +88,7 @@ EventEmitter.event("MyEvent", [true, "param2"]);
 ```
 
 In this example you can see basic usages of emitter. You can subscribe for event and call event with or without parameters.
-But there are two main problems. You can not destroy this handler for MyEvent, because you don't have original handler and also 
+But there are two main problems. You can not destroy this handler for MyEvent, because you don't have original handler and also
 you don't have context, so in handler is invalid pointer on `this`. We can make modification for first problem.
 
 #### Example 1 - first problem solve
@@ -160,6 +160,7 @@ emitter.subscribe(document.body, "click", handler);
 
 MIT License
 
+Copyright (c) 2022 Radek Sedlák
 Copyright (c) 2015 Stanislav Hacker
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
