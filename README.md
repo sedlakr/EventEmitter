@@ -160,7 +160,7 @@ emitter.subscribe(document.body, "click", handler);
 
 MIT License
 
-Copyright (c) 2022 Radek Sedlák
+Copyright (c) 2022 Radek Sedlák\
 Copyright (c) 2015 Stanislav Hacker
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
