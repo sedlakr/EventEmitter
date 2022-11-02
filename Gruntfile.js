@@ -46,6 +46,8 @@ module.exports = function (grunt) {
 			performance: {
 				src: files,
 				options: {
+					version: "3.8.0",
+					noSandbox: true,
 					outfile: "TestsRunnerPerformance.html",
 					specs: performanceSpecs
 				}
@@ -57,7 +59,7 @@ module.exports = function (grunt) {
 					specs: specs
 				}
 			},
-			coverage: {
+			/*coverage: {
 				src: files,
 				options: {
 					outfile: "TestsRunner.html",
@@ -73,7 +75,7 @@ module.exports = function (grunt) {
 						}
 					}
 				}
-			},
+			},*/
 			options: {
 				keepRunner: true
 			}
