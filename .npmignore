@@ -1,0 +1,15 @@
+.grunt/
+.idea/
+performanceTests/
+test/
+src/
+.editorconfig
+.eslintrc
+.floo
+.flooignore
+.gitignore
+.npmignore
+Gruntfile.js
+index.html
+TestsRunner.html
+TestsRunnerPerformance.html

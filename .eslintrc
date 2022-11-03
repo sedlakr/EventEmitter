@@ -155,6 +155,8 @@
 
 	"globals": {
 		"S": true,
+		"globalThis": false,
+		"console": false,
 		"widget": true
 	}
 }

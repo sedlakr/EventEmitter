@@ -1,3 +1,6 @@
 /*global MQ*/
 //EventEmitter create
-var EventEmitter = new MQ.Emitter(true); //eslint-disable-line
+if (globalThis.EventEmitter) {
+	console.warn(" EventEmitter already exists on globalThis, redefining");
+}
+globalThis.EventEmitter = new MQ.Emitter(true); //eslint-disable-line
