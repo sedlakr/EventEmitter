@@ -1,4 +1,8 @@
-var MQ = {};;/*global MQ*/
+if (globalThis.MQ) {
+	console.warn("MQ already exists on globalThis, redefining");
+}
+globalThis.MQ = {};
+;/*global MQ*/
 MQ.Timer = (function (MQ, p) {
 	"use strict";
 
@@ -1010,4 +1014,7 @@ MQ.Emitter = (function (MQ, p) {
 
 }(MQ));;/*global MQ*/
 //EventEmitter create
-var EventEmitter = new MQ.Emitter(true); //eslint-disable-line
+if (globalThis.EventEmitter) {
+	console.warn(" EventEmitter already exists on globalThis, redefining");
+}
+globalThis.EventEmitter = new MQ.Emitter(true); //eslint-disable-line

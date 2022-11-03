@@ -1,10 +1,11 @@
 {
-  "name": "@sedlakr/mq",
+  "name": "@sedlak.r/mq",
   "version": "1.0.0",
   "description": "Message queue for events",
   "source": "src/index.js",
-  "main": "dist/mq.min.js",
+  "main": "./dist/mq.min.js",
   "exports": {
+    ".": "./dist/mq.min.js",
     "./*": "./dist/*.js"
   },
   "dependencies": {},
@@ -21,6 +22,9 @@
   },
   "scripts": {
     "test": "grunt test"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "author": "Stanislav Hacker",
   "contributors": [

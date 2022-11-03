@@ -5,7 +5,7 @@ module.exports = function (grunt) {
 	// Project configuration.
 
 	//files spec
-	var resources = "dist/",
+	var distTarget = "dist/",
 		files = [
 			//ancestors
 			"src/mq.js",
@@ -26,7 +26,8 @@ module.exports = function (grunt) {
 		],
 		gruntFile = [
 			"Gruntfile.js"
-		];
+		],
+		distName = "mq";
 
 
 	//noinspection JSUnresolvedFunction
@@ -37,7 +38,7 @@ module.exports = function (grunt) {
 
 		clean: {
 			bin: ["bin/**/*.*"],
-			dist: [resources + "*.*"]
+			dist: [distTarget + "*.*"]
 		},
 
 		//Jasmine task
@@ -92,7 +93,7 @@ module.exports = function (grunt) {
 				// the files to concatenate
 				src: files,
 				// the location of the resulting JS file
-				dest: resources + "<%= pkg.name %>.js"
+				dest: distTarget + distName + ".js"
 			}
 		},
 
@@ -100,11 +101,11 @@ module.exports = function (grunt) {
 
 		uglify: {
 			options: {
-				banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+				banner: '/*! <%= pkg.name %>@<%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
 			},
 			build: {
-				src: resources + "<%= pkg.name %>.js",
-				dest: resources + "<%= pkg.name %>.min.js"
+				src: distTarget + distName + ".js",
+				dest: distTarget + distName + ".min.js"
 			}
 		},
 
