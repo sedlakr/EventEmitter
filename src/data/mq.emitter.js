@@ -8,10 +8,7 @@ MQ.Emitter = (function (MQ, p) {
 		debugFilters = [],
 		debugMode = false,
 		simpleMode = false,
-		store = new MQ.Store(),
-		//triple click data
-		clickCount = 0,
-		clickStart = 0;
+		store = new MQ.Store();
 
 	/**
 	 * @typedef {Object} NotifyQueueItem
@@ -102,6 +99,9 @@ MQ.Emitter = (function (MQ, p) {
 	 * @param {Function} handler
 	 */
 	function addTripleClick(el, handler) {
+		var clickCount = 0,
+			clickStart = 0;
+
 		/**
 		 * Triple click dblclick handler
 		 * @param {Event} event
