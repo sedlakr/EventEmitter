@@ -11,6 +11,14 @@ Download and install [NodeJs](https://nodejs.org/en/)
 
 Run command `npm install`
 
+### How to release
+
+- install
+- commit changes
+- bump version in package json
+- run grunt default task
+- run npm publish in root directory
+
 ### Test status on CodeShip
 ![CodeShip status](https://codeship.com/projects/3e312a00-5f7a-0133-10a2-5684d7134b37/status?branch=master "CodeShip status")
 
