@@ -412,8 +412,9 @@ MQ.Emitter = (function (MQ, p) {
 	 * @param {Window|HTMLElement|HTMLDocument} element
 	 * @param {string} eventType
 	 * @param {function} handler
+	 * @param {object=} eventOptions
 	 */
-	function addEvent(element, eventType, handler) {
+	function addEvent(element, eventType, handler, eventOptions) {
 		//tripleclick
 		if (eventType === "tripleclick") {
 			addTripleClick(element, handler);
@@ -432,7 +433,7 @@ MQ.Emitter = (function (MQ, p) {
 		// DOM Level 2 browsers
 		if (element.addEventListener) {
 			//noinspection JSUnresolvedVariable
-			element.addEventListener(eventType, handler.eventDoneRuntime, false);
+			element.addEventListener(eventType, handler.eventDoneRuntime, eventOptions ?? false);
 			// IE <= 8
 		} else {
 			element = element === window ? document : element;
@@ -905,16 +906,17 @@ MQ.Emitter = (function (MQ, p) {
 	 * @param {string|function} nameOrHandler
 	 * @param {function=} handlerOrUndefined
 	 * @param {Array.<Object>=} paramsOrUndefined
+	 * @param {object=} eventOptions
 	 * @returns {Emitter}
 	 */
-	p.subscribe = function (nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined) {
+	p.subscribe = function (nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined, eventOptions) {
 		var context = this.context,
 			data = normalizeSubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined);
 
 		//for element
 		if (data.element) {
 			//noinspection JSUnresolvedVariable
-			addEvent(data.element, data.name, createHandler(context, data));
+			addEvent(data.element, data.name, createHandler(context, data), eventOptions);
 		//no element event
 		} else {
 			//save to storage
@@ -1012,7 +1014,8 @@ MQ.Emitter = (function (MQ, p) {
 	//return event
 	return Emitter;
 
-}(MQ));;/*global MQ*/
+}(MQ));
+;/*global MQ*/
 //EventEmitter create
 if (globalThis.EventEmitter) {
 	console.warn(" EventEmitter already exists on globalThis, redefining");
