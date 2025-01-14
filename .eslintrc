@@ -1,6 +1,9 @@
 {
 	"ecmaFeatures": {
 	},
+	"parserOptions": {
+		"ecmaVersion": 2023
+	},
 
 	"rules": {
 		// Possible Errors - http://eslint.org/docs/rules/#possible-errors
