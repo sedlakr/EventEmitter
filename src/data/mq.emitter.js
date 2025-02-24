@@ -79,11 +79,6 @@ MQ.Emitter = (function (MQ, p) {
 		if (element.removeEventListener) {
 			//noinspection JSUnresolvedVariable
 			element.removeEventListener(eventType, handler.eventDoneRuntime);
-			// For IE 8 and earlier versions
-		} else {
-			element = element === globalThis ? document : element;
-			//noinspection JSUnresolvedVariable
-			element.detachEvent("on" + eventType, handler.eventDoneRuntime);
 		}
 		//for firefox
 		if (eventType === "mousewheel") {
