@@ -434,11 +434,6 @@ MQ.Emitter = (function (MQ, p) {
 		if (element.addEventListener) {
 			//noinspection JSUnresolvedVariable
 			element.addEventListener(eventType, handler.eventDoneRuntime, eventOptions ?? false);
-			// IE <= 8
-		} else {
-			element = element === globalThis ? document : element;
-			//noinspection JSUnresolvedVariable
-			element.attachEvent("on" + eventType, handler.eventDoneRuntime);
 		}
 		//for firefox
 		if (eventType === "mousewheel") {
@@ -459,7 +454,7 @@ MQ.Emitter = (function (MQ, p) {
 			removeTripleClick(element, handler);
 			return;
 		}
-		// For all major browsers, except IE 8 and earlier
+		// For all major browsers
 		if (element.removeEventListener) {
 			//noinspection JSUnresolvedVariable
 			element.removeEventListener(eventType, handler.eventDoneRuntime);
