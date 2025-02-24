@@ -405,7 +405,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @type {Window}
 	 * @public
 	 */
-	MQ.mqDefault = window;
+	MQ.mqDefault = globalThis;
 
 	/**
 	 * Add event
@@ -427,19 +427,11 @@ MQ.Emitter = (function (MQ, p) {
 		 * @param {Event} e
 		 */
 		handler.eventDoneRuntime = handler.eventDoneRuntime || function (e) {
-			handler(window.event || e);
+			handler(globalThis.event || e);
 		};
 
-		// DOM Level 2 browsers
-		if (element.addEventListener) {
-			//noinspection JSUnresolvedVariable
-			element.addEventListener(eventType, handler.eventDoneRuntime, eventOptions ?? false);
-			// IE <= 8
-		} else {
-			element = element === window ? document : element;
-			//noinspection JSUnresolvedVariable
-			element.attachEvent("on" + eventType, handler.eventDoneRuntime);
-		}
+		//noinspection JSUnresolvedVariable
+		element.addEventListener(eventType, handler.eventDoneRuntime, eventOptions ?? false);
 		//for firefox
 		if (eventType === "mousewheel") {
 			//noinspection JSUnresolvedVariable
@@ -459,16 +451,8 @@ MQ.Emitter = (function (MQ, p) {
 			removeTripleClick(element, handler);
 			return;
 		}
-		// For all major browsers, except IE 8 and earlier
-		if (element.removeEventListener) {
-			//noinspection JSUnresolvedVariable
-			element.removeEventListener(eventType, handler.eventDoneRuntime);
-			// For IE 8 and earlier versions
-		} else {
-			element = element === window ? document : element;
-			//noinspection JSUnresolvedVariable
-			element.detachEvent("on" + eventType, handler.eventDoneRuntime);
-		}
+		//noinspection JSUnresolvedVariable
+		element.removeEventListener(eventType, handler.eventDoneRuntime);
 		//for firefox
 		if (eventType === "mousewheel") {
 			//noinspection JSUnresolvedVariable
@@ -494,7 +478,7 @@ MQ.Emitter = (function (MQ, p) {
 		handler.tripleDblClickHandler = function (event) {
 			if (!document.body.addEventListener) {
 				//noinspection JSUnresolvedFunction
-				handler.tripleClickHandler(event || window.event);
+				handler.tripleClickHandler(event || globalThis.event);
 			}
 		};
 		/**
@@ -503,7 +487,7 @@ MQ.Emitter = (function (MQ, p) {
 		 */
 		handler.tripleClickHandler = function (event) {
 			//event convert
-			event = event || window.event;
+			event = event || globalThis.event;
 			//check date
 			if (clickStart > (new Date()).getTime() - 400) {
 				clickCount += 1;
@@ -577,7 +561,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {boolean}
 	 */
 	function cancelDefault(e) {
-		var evt = e ? e : window.event;
+		var evt = e ? e : globalThis.event;
 
 		if (evt.preventDefault) {
 			evt.preventDefault();
@@ -613,7 +597,7 @@ MQ.Emitter = (function (MQ, p) {
 		//type 2
 		isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
 		isDocument = nameOrElement === document;
-		isWindow = nameOrElement === window;
+		isWindow = nameOrElement === globalThis;
 		//check
 		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
 			//return
@@ -665,7 +649,7 @@ MQ.Emitter = (function (MQ, p) {
 		//type 3
 		isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
 		isDocument = nameOrElement === document;
-		isWindow = nameOrElement === window;
+		isWindow = nameOrElement === globalThis;
 		//check
 		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
 			//return
