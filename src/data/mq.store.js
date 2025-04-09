@@ -1,4 +1,4 @@
-/*global console, MQ*/
+/*global MQ*/
 MQ.Store = (function (MQ, p) {
 	"use strict";
 
@@ -9,7 +9,7 @@ MQ.Store = (function (MQ, p) {
 	 * @returns {Array.<StoreRecord>}
 	 */
 	function event(store, name) {
-		var data = store[name];
+		let data = store[name];
 
 		//events not exists
 		if (!data) {
@@ -17,6 +17,19 @@ MQ.Store = (function (MQ, p) {
 			store[name] = data;
 		}
 		return data;
+	}
+
+	/**
+	 * Context event name create
+	 * @param {Object} store
+	 * @param {Object} context
+	 * @param {string} name
+	 * @returns {Array.<StoreRecord>}
+	 */
+	function ctxEvent(store, context, name){
+		const data = event(store, name);
+
+		return data.filter(item => item.context === context);
 	}
 
 	//noinspection JSValidateJSDoc
@@ -27,7 +40,7 @@ MQ.Store = (function (MQ, p) {
 	 */
 	function evaluate(data, params) {
 		//iterate
-		var i,
+		let i,
 			length,
 			record;
 
@@ -54,16 +67,16 @@ MQ.Store = (function (MQ, p) {
 	 * @return {Object}
 	 */
 	function request(data, name, params) {
-		var record,
+		let record,
 			result,
 			length = data.length;
 
 		//error
 		if (length === 0) {
-			throw "EventEmitter: Can not make request on event that has not handler for '" + name + "'.";
+			throw new Error("EventEmitter: Can not make request on event that has not handler for '" + name + "'.");
 		}
 		if (length > 1) {
-			throw "EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.";
+			throw new Error("EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.");
 		}
 		//get record
 		record = data[0];
@@ -86,7 +99,7 @@ MQ.Store = (function (MQ, p) {
 	 * @return {Object}
 	 */
 	function demand(data, name, params) {
-		var record,
+		let record,
 			result,
 			length = data.length;
 
@@ -124,7 +137,7 @@ MQ.Store = (function (MQ, p) {
 	 * @param {function=} handler
 	 */
 	function removeByName(store, context, name, handler) {
-		var i,
+		let i,
 			record,
 			canRemove,
 			newData = [],
@@ -159,7 +172,7 @@ MQ.Store = (function (MQ, p) {
 	 * @param {Object} context
 	 */
 	function removeByContext(store, context) {
-		var i,
+		let i,
 			key,
 			data,
 			record,
@@ -282,11 +295,33 @@ MQ.Store = (function (MQ, p) {
 	 */
 	p.request = function (name, params) {
 		//normalize
-		name = name.toLowerCase();
+		const normalizedName = normalizeName(name);
+
 		//evaluate
-		//noinspection JSUnresolvedVariable
-		return request(event(this.store, name), name, params);
+		return request(event(this.store, normalizedName), normalizedName, params);
 	};
+
+	/**
+	 * Contextual request
+	 * @param {Object} ctx
+	 * @param {string} name
+	 * @param {Object} params
+	 * @return {Object}
+	 */
+	p.ctxRequest = function (ctx, name, params) {
+		const normalizedName = normalizeName(name);
+
+		return request(ctxEvent(this.store, ctx, normalizedName), normalizedName, params);
+	};
+
+	/**
+	 * Normalize evt name
+	 * @param {string} name
+	 * @returns {string}
+	 */
+	function normalizeName(name) {
+		return name.toLowerCase();
+	}
 
 	/**
 	 * Demand

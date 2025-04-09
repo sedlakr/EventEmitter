@@ -111,7 +111,7 @@ describe("The Emitter", function () {
 
 		expect(function () {
 			emitter.in(null);
-		}).toThrow("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
+		}).toThrowError("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
 	});
 
 	it("Enable debug mode", function () {

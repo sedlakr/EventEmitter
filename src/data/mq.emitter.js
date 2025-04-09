@@ -398,6 +398,28 @@ MQ.Emitter = (function (MQ, p) {
 	};
 
 	/**
+	 * Request
+	 * @param {string} name
+	 * @param {Object} params
+	 * @return {Object}
+	 */
+	p.ctxRequest = function (name, params) {
+		const ctx = this.context;
+
+		if (ctx === MQ.mqDefault) {
+			throw new Error("Request with context is available only on instances with custom context. Current context is default. ");
+		}
+
+		//evaluate and return response
+		let returnValue = store.ctxRequest(ctx, name, params);
+
+		//reporter
+		debugReporter("debug", name, "Context request for '" + name + "' return '" + returnValue + "' for parameters ", params);
+		//return data
+		return returnValue;
+	};
+
+	/**
 	 * Demand
 	 * @param {string} name
 	 * @param {Object} params
@@ -570,7 +592,7 @@ MQ.Emitter = (function (MQ, p) {
 
 		//static
 		if (isStatic) {
-			throw "EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.";
+			throw new Error("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
 		}
 		//set new context
 		this.context = context;

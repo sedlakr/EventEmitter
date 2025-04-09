@@ -60,9 +60,24 @@ describe("The MQ.Store", function () {
 
 		expect(function () {
 			store.request("test", {param1: "test"});
-		}).toThrow("EventEmitter: Can not make request on event that has not handler for 'test'.");
+		}).toThrowError("EventEmitter: Can not make request on event that has not handler for 'test'.");
 
 		expect(count).toBe(2);
+	});
+
+	it("record with context", () => {
+		const store = new MQ.Store();
+		const context1 = {};
+		const context2 = {};
+
+		store.save(context1, "test", () => 1);
+		store.save(context2, "test", () => 2);
+
+		const res1 = store.ctxRequest(context1, "test", {});
+		const res2 = store.ctxRequest(context2, "test", {});
+
+		expect(res1).toBe(1);
+		expect(res2).toBe(2);
 	});
 
 });

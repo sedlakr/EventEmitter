@@ -57,7 +57,7 @@ describe("MQ - base", function () {
 
 		expect(function () {
 			emitter.request("request", {params1: 10});
-		}).toThrow("EventEmitter: Can not make request on event that has not handler for 'request'.");
+		}).toThrowError("EventEmitter: Can not make request on event that has not handler for 'request'.");
 
 		expect(count).toBe(1);
 
@@ -66,7 +66,7 @@ describe("MQ - base", function () {
 
 		expect(function () {
 			emitter.request("test", {params1: 10});
-		}).toThrow("EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('test') instead.");
+		}).toThrowError("EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('test') instead.");
 
 		emitter.unsubscribe("test", handler);
 		emitter.unsubscribe("test", handler2);
