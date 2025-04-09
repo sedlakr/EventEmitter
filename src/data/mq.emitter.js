@@ -1,8 +1,8 @@
-/*global console, MQ*/
+/*global MQ*/
 MQ.Emitter = (function (MQ, p) {
 	"use strict";
 
-	var timer,
+	let timer,
 		/** @type {Array.<NotifyQueueItem>}*/
 		notifyQueue = [],
 		debugFilters = [],
@@ -84,7 +84,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @param {Function} handler
 	 */
 	function addTripleClick(el, handler) {
-		var clickCount = 0,
+		let clickCount = 0,
 			clickStart = 0;
 
 		/**
@@ -177,7 +177,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {boolean}
 	 */
 	function cancelDefault(e) {
-		var evt = e ? e : globalThis.event;
+		const evt = e ? e : globalThis.event;
 
 		if (evt.preventDefault) {
 			evt.preventDefault();
@@ -195,10 +195,6 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {{element: Element, name: string, handler: function, params: Array.<Object>}}
 	 */
 	function normalizeSubscribeParams(nameOrElement, nameOrHandler, handler, paramsOrUndefined) {
-		var isElement,
-			isDocument,
-			isWindow;
-
 		//type 1
 		if (typeof nameOrElement === "string" && typeof nameOrHandler === "function") {
 			//return
@@ -211,9 +207,10 @@ MQ.Emitter = (function (MQ, p) {
 		}
 
 		//type 2
-		isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
-		isDocument = nameOrElement === document;
-		isWindow = nameOrElement === globalThis;
+		const isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
+		const isDocument = nameOrElement === document;
+		const isWindow = nameOrElement === globalThis;
+
 		//check
 		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
 			//return
@@ -226,7 +223,7 @@ MQ.Emitter = (function (MQ, p) {
 		}
 
 		//error
-		throw "EventEmitter: Incorrect parameters given into function subscribe() or unsubscribe().";
+		throw new Error("EventEmitter: Incorrect parameters given into function subscribe() or unsubscribe().");
 	}
 
 	/**
@@ -237,10 +234,6 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {{element: Element, name: string, handler: function}|null}
 	 */
 	function normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handler) {
-		var isElement,
-			isDocument,
-			isWindow;
-
 		//type 1
 		if (nameOrElement === undefined || nameOrHandler === undefined) {
 			//return
@@ -263,9 +256,10 @@ MQ.Emitter = (function (MQ, p) {
 		}
 
 		//type 3
-		isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
-		isDocument = nameOrElement === document;
-		isWindow = nameOrElement === globalThis;
+		const isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
+		const isDocument = nameOrElement === document;
+		const isWindow = nameOrElement === globalThis;
+
 		//check
 		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
 			//return
@@ -297,9 +291,9 @@ MQ.Emitter = (function (MQ, p) {
 		}
 		//get display fnc
 		if (console[type]) {
-			console[type]("EventEmitter: (" + (new Date()).toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
+			console[type]("EventEmitter: (" + new Date().toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
 		} else {
-			console.info("EventEmitter: (" + (new Date()).toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
+			console.info("EventEmitter: (" + new Date().toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
 		}
 	}
 
@@ -307,10 +301,9 @@ MQ.Emitter = (function (MQ, p) {
 	 * Run queue
 	 */
 	function runQueue() {
-		var queue;
-
 		//run
-		queue = /** @type {NotifyQueueItem}*/notifyQueue.shift();
+		let queue = /** @type {NotifyQueueItem}*/notifyQueue.shift();
+
 		while (queue) {
 			store.evaluate(queue.name, queue.params);
 			queue = /** @type {NotifyQueueItem}*/notifyQueue.shift();
@@ -321,7 +314,7 @@ MQ.Emitter = (function (MQ, p) {
 
 	/**
 	 * Emitter
-	 * @param {boolean} isStatic
+	 * @param {boolean=} isStatic
 	 * @constructor
 	 */
 	function Emitter(isStatic) {
@@ -364,7 +357,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {MQ.Timer}
 	 */
 	p.notify = function (name, params) {
-		var queue = /** @type {NotifyQueueItem}*/{};
+		let queue = /** @type {NotifyQueueItem}*/{};
 
 		//reporter
 		debugReporter("debug", name, "Notify for '" + name + "' send with parameters ", params);
@@ -396,7 +389,7 @@ MQ.Emitter = (function (MQ, p) {
 	 */
 	p.request = function (name, params) {
 		//evaluate and return response
-		var returnValue = store.request(name, params);
+		let returnValue = store.request(name, params);
 
 		//reporter
 		debugReporter("debug", name, "Request for '" + name + "' return '" + returnValue + "' for parameters ", params);
@@ -412,7 +405,7 @@ MQ.Emitter = (function (MQ, p) {
 	 */
 	p.demand = function (name, params) {
 		//evaluate and return response
-		var returnValue = store.demand(name, params);
+		let returnValue = store.demand(name, params);
 
 		//reporter
 		debugReporter("debug", name, "Demand for '" + name + "' return '" + returnValue + "' for parameters ", params);
@@ -427,7 +420,7 @@ MQ.Emitter = (function (MQ, p) {
 	 */
 	p.watching = function (name) {
 		//evaluate and return response
-		var count = store.watching(name);
+		let count = store.watching(name);
 
 		//reporter
 		debugReporter("debug", name, "Watching count status for '" + name + "' return '" + count, []);
@@ -442,10 +435,8 @@ MQ.Emitter = (function (MQ, p) {
 	 * @return {function}
 	 */
 	function createHandler(context, data) {
-		var handlers;
-
 		//create name by event name
-		handlers = data.handler.handlers = data.handler.handlers || [];
+		let handlers = data.handler.handlers = data.handler.handlers || [];
 
 		/**
 		 * Handler
@@ -469,7 +460,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @param {{element: Element, name: string, handler: function}|null} data
 	 */
 	function destroyHandler(context, data) {
-		var i,
+		let i,
 			handlerType,
 			handlerContext,
 			currentHandler,
@@ -510,7 +501,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {Emitter}
 	 */
 	p.subscribe = function (nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined, eventOptions) {
-		var context = this.context,
+		let context = this.context,
 			data = normalizeSubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined);
 
 		//for element
@@ -534,7 +525,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {Emitter}
 	 */
 	p.unsubscribe = function (nameOrElement, nameOrHandler, handlerOrUndefined) {
-		var data = normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined);
+		let data = normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined);
 
 		//this is weird
 		if (this.context === MQ.mqDefault && !data.name && !data.handler) {
@@ -575,8 +566,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {Emitter}
 	 */
 	p.in = function (context) {
-		//noinspection JSUnresolvedVariable
-		var isStatic = this.isStatic;
+		const isStatic = this.isStatic;
 
 		//static
 		if (isStatic) {
