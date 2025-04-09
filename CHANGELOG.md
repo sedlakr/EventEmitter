@@ -1,5 +1,8 @@
 ## Unreleased
 
+### Added
+- contextual request
+
 ## 1.3.0
 
 ### Changed
