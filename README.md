@@ -49,6 +49,10 @@ This is similar to `.event()` but this function return value. This is a really s
 it's right called. If `.request()` has not any handler, than fail because without handler you can not get return value. Call
 also fail if there are more handlers than one, because you can not get return value from more functions.
 
+#### .ctxRequest(name, params)
+
+Same as `.request` above, but looks up for event with same context as callee
+
 #### .demand(name, params)
 
 Call request with given `name` and send through given `params` and get return from this call.
