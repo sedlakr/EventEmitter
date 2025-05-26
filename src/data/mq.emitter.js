@@ -455,7 +455,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @param {string} name
 	 * @return {number}
 	 */
-	p.watching = function (name) {
+	p.ctxWatching = function (name) {
 		const ctx = this.context;
 
 		if (ctx === MQ.mqDefault) {

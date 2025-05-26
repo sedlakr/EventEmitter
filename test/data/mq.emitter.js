@@ -1,4 +1,4 @@
-/*global console, MQ, describe, it, spyOn*/
+/*global console, MQ, describe, it, spyOn, EventEmitter*/
 describe("The Emitter", function () {
 	"use strict";
 
@@ -150,5 +150,22 @@ describe("The Emitter", function () {
 		var emitter = createEmitter();
 
 		expect(emitter.version).toBeDefined();
+	});
+
+	it("The method ctxWatching works", function () {
+		const context1 = {};
+		const context2 = {};
+		const emitter1 = EventEmitter.create(context1);
+		const emitter2 = EventEmitter.create(context2);
+		const eventName = "test-watching-name";
+
+		emitter1.subscribe(eventName, () => undefined);
+		emitter2.subscribe(eventName, () => undefined);
+		emitter2.subscribe(eventName, () => undefined);
+
+		expect(emitter1.ctxWatching(eventName)).toBe(1);
+		expect(emitter2.ctxWatching(eventName)).toBe(2);
+		expect(emitter1.watching(eventName)).toBe(3);
+		expect(emitter2.watching(eventName)).toBe(3);
 	});
 });
