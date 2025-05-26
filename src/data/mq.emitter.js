@@ -451,6 +451,27 @@ MQ.Emitter = (function (MQ, p) {
 	};
 
 	/**
+	 * Watching with context
+	 * @param {string} name
+	 * @return {number}
+	 */
+	p.ctxWatching = function (name) {
+		const ctx = this.context;
+
+		if (ctx === MQ.mqDefault) {
+			throw new Error("Watching with context is available only on instances with custom context. Current context is default. ");
+		}
+
+		//evaluate and return response
+		let count = store.ctxWatching(ctx, name);
+
+		//reporter
+		debugReporter("debug", name, "Context watching count status for '" + name + "' return '" + count, []);
+		//return data
+		return count;
+	};
+
+	/**
 	 * Create handler
 	 * @param {*} context
 	 * @param {{element: Element, name: string, handler: function, params: Array.<Object>}} data

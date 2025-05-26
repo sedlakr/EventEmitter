@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 1.5.0
+
+### Added
+- contextual watching
+
 ## 1.4.0
 
 ### Added

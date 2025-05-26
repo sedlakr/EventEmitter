@@ -9,7 +9,7 @@ simple to use it.
 
 Download and install [NodeJs](https://nodejs.org/en/)
 
-Run command `npm install`
+Run command `npm install --force`
 
 ### How to release
 
@@ -79,6 +79,10 @@ and cancel default action. It's helper function.
 
 This function is used for getting number of listener, who use `.subscribe()` method. If function return `0`, nobody listen
 on event and is not necessary to call it.
+
+#### .ctxWatching(name)
+
+Same as `.watching` above, but looks up for event with same context as callee
 
 #### .debugMode(state, filters)
 
