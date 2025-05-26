@@ -413,6 +413,21 @@ MQ.Store = (function (MQ, p) {
 		return watching(event(this.store, name));
 	};
 
+	/**
+	 * Contextual watching
+	 * @param {Object} ctx
+	 * @param {string} name
+	 * @return {Object}
+	 */
+	p.ctxWatching = function (ctx, name) {
+		//normalize
+		name = name.toLowerCase();
+		//evaluate
+		//noinspection JSUnresolvedVariable
+		return watching(ctxEvent(this.store, ctx, name));
+	};
+
+
 	//noinspection JSUnusedGlobalSymbols
 	p.version = "1.0";
 	return Store;
@@ -866,6 +881,27 @@ MQ.Emitter = (function (MQ, p) {
 
 		//reporter
 		debugReporter("debug", name, "Watching count status for '" + name + "' return '" + count, []);
+		//return data
+		return count;
+	};
+
+	/**
+	 * Watching with context
+	 * @param {string} name
+	 * @return {number}
+	 */
+	p.watching = function (name) {
+		const ctx = this.context;
+
+		if (ctx === MQ.mqDefault) {
+			throw new Error("Watching with context is available only on instances with custom context. Current context is default. ");
+		}
+
+		//evaluate and return response
+		let count = store.ctxWatching(ctx, name);
+
+		//reporter
+		debugReporter("debug", name, "Context watching count status for '" + name + "' return '" + count, []);
 		//return data
 		return count;
 	};

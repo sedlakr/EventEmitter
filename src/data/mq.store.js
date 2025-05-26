@@ -350,6 +350,21 @@ MQ.Store = (function (MQ, p) {
 		return watching(event(this.store, name));
 	};
 
+	/**
+	 * Contextual watching
+	 * @param {Object} ctx
+	 * @param {string} name
+	 * @return {Object}
+	 */
+	p.ctxWatching = function (ctx, name) {
+		//normalize
+		name = name.toLowerCase();
+		//evaluate
+		//noinspection JSUnresolvedVariable
+		return watching(ctxEvent(this.store, ctx, name));
+	};
+
+
 	//noinspection JSUnusedGlobalSymbols
 	p.version = "1.0";
 	return Store;
