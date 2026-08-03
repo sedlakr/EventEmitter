@@ -1,8 +1,14 @@
 ## Unreleased
 
+## 2.0.0-rc.1
+
 > Contains behaviour changes. `demand()` now throws an `Error` where it used to
 > throw a string, which is breaking for anyone catching it - a `2.0.0` release
 > rather than a minor one.
+>
+> Published under the `rc` dist-tag, so `npm install @sedlak.r/mq` keeps
+> resolving to 1.5.0. Install this one explicitly with `@sedlak.r/mq@rc` or by
+> exact version.
 
 ### Breaking
 
