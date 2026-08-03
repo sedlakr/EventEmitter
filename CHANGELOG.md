@@ -1,6 +1,6 @@
 ## Unreleased
 
-## 2.0.0-rc.1
+## 2.0.0-rc.2
 
 > Contains behaviour changes. `demand()` now throws an `Error` where it used to
 > throw a string, which is breaking for anyone catching it - a `2.0.0` release

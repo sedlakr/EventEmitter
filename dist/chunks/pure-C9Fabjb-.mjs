@@ -1,4 +1,4 @@
-/*! @sedlak.r/mq@2.0.0-rc.1 */
+/*! @sedlak.r/mq@2.0.0-rc.2 */
 //#region src/context.ts
 /**
 * The sentinel context meaning "no context was set".
@@ -161,7 +161,7 @@ var Store = class {
 		return ctxEvent(this.store, ctx, normalized).length;
 	}
 };
-Store.prototype.version = "2.0.0-rc.1";
+Store.prototype.version = "2.0.0-rc.2";
 //#endregion
 //#region src/timer.ts
 /**
@@ -200,7 +200,7 @@ var Timer = class {
 		}
 	}
 };
-Timer.prototype.version = "2.0.0-rc.1";
+Timer.prototype.version = "2.0.0-rc.2";
 //#endregion
 //#region src/emitter.ts
 /**
@@ -567,7 +567,7 @@ var Emitter = class Emitter {
 		console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 	}
 };
-Emitter.prototype.version = "2.0.0-rc.1";
+Emitter.prototype.version = "2.0.0-rc.2";
 //#endregion
 //#region src/pure.ts
 /** The shared, context-less emitter. Cannot be rebound with `in()`. */
