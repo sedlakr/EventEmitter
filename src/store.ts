@@ -1,10 +1,25 @@
 import { getMqDefault } from "./context.js";
 
-/** Anything usable as a handler context. */
-export type Context = object;
+/**
+ * Anything usable as a handler context.
+ *
+ * Contexts are only ever compared by identity, so a primitive works as well as
+ * an object and callers do pass strings. `object` would reject those; this is
+ * the modern spelling of the `Object` the previous declaration used.
+ */
+export type Context = NonNullable<unknown>;
 
-/** A subscribed handler. Params are passed as a single argument, or none. */
-export type Handler = (params?: unknown) => unknown;
+/**
+ * A subscribed handler. Params are passed as a single argument, or none.
+ *
+ * The parameter is `any` rather than `unknown` on purpose. An event bus cannot
+ * know what a given event carries, and every consumer reaches straight into the
+ * payload (`data => use(data[0])`). Typing it `unknown` forces a cast at every
+ * subscribe callback for no safety that the caller did not already have.
+ * Narrow it per event with the generic on `subscribe` instead.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
+export type Handler<T = any> = (params?: T) => unknown;
 
 /**
  * One subscription. `removed` is set before the record is spliced out so that
@@ -217,22 +232,22 @@ export class Store {
 		evaluate(event(this.store, normalized), params);
 	}
 
-	request(name: string, params?: unknown): unknown {
+	request<T = unknown>(name: string, params?: unknown): T {
 		const normalized = name.toLowerCase();
 
-		return request(event(this.store, normalized), normalized, params);
+		return request(event(this.store, normalized), normalized, params) as T;
 	}
 
-	ctxRequest(ctx: Context, name: string, params?: unknown): unknown {
+	ctxRequest<T = unknown>(ctx: Context, name: string, params?: unknown): T {
 		const normalized = name.toLowerCase();
 
-		return request(ctxEvent(this.store, ctx, normalized), normalized, params);
+		return request(ctxEvent(this.store, ctx, normalized), normalized, params) as T;
 	}
 
-	demand(name: string, params?: unknown): unknown {
+	demand<T = unknown>(name: string, params?: unknown): T {
 		const normalized = name.toLowerCase();
 
-		return demand(event(this.store, normalized), normalized, params);
+		return demand(event(this.store, normalized), normalized, params) as T;
 	}
 
 	watching(name: string): number {

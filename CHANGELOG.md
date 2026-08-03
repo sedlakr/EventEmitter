@@ -1,6 +1,6 @@
 ## Unreleased
 
-## 2.0.0-rc.2
+## 2.0.0-rc.3
 
 > Contains behaviour changes. `demand()` now throws an `Error` where it used to
 > throw a string, which is breaking for anyone catching it - a `2.0.0` release
@@ -15,6 +15,22 @@
 - `demand()` throws an `Error` instead of a bare string when an event has more
   than one handler. Callers doing `catch (e) { ... e.message ... }` previously
   got `undefined`; `catch (e) { ... e ... }` now yields an `Error`, not a string.
+
+### Types
+
+The shipped declarations are a drop-in replacement for a hand-written ambient
+`.d.ts`, so they deliberately match the shape consumers already had:
+
+- `EventEmitter` and `MQ.Emitter` / `MQ.Store` / `MQ.Timer` resolve in type
+  position as well as value position.
+- `request()`, `ctxRequest()` and `demand()` are generic and default to `any`,
+  matching the previous contract. Pass the type to narrow -
+  `request<Ticket>("getTicket")` - rather than casting the result.
+- Subscribe handlers receive `any` rather than `unknown`. An event bus cannot
+  know what an event carries, and every caller indexes straight into the
+  payload; `unknown` would force a cast at every callback for no real safety.
+- A context may be any non-nullish value, not only an object. Contexts are
+  compared by identity, and callers do pass strings.
 
 ### Added
 

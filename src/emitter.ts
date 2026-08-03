@@ -13,7 +13,8 @@ import { Timer } from "./timer.js";
  * internals pass rather than smuggled into a type-only port.
  */
 export interface DecoratedHandler {
-	(...args: unknown[]): unknown;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see the note on Handler in store.ts
+	(...args: any[]): unknown;
 	/** On a subscriber: the bound wrappers created for it, one per binding. */
 	handlers?: DecoratedHandler[];
 	/** On a bound wrapper: the function actually passed to addEventListener. */
@@ -487,9 +488,10 @@ export class Emitter {
 	/**
 	 * Dispatches to exactly one handler and returns its value.
 	 */
-	request(name: string, params?: unknown): unknown {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- defaults to the pre-2.0 contract; pass T to narrow
+	request<T = any>(name: string, params?: unknown): T {
 		//evaluate and return response
-		const returnValue = store.request(name, params);
+		const returnValue = store.request<T>(name, params);
 
 		//reporter
 		debugReporter("debug", name, "Request for '" + name + "' return '" + returnValue + "' for parameters ", params);
@@ -500,7 +502,8 @@ export class Emitter {
 	/**
 	 * As `request`, restricted to handlers sharing this emitter's context.
 	 */
-	ctxRequest(name: string, params?: unknown): unknown {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- defaults to the pre-2.0 contract; pass T to narrow
+	ctxRequest<T = any>(name: string, params?: unknown): T {
 		const ctx = this.context;
 
 		if (ctx === getMqDefault()) {
@@ -510,7 +513,7 @@ export class Emitter {
 		}
 
 		//evaluate and return response
-		const returnValue = store.ctxRequest(ctx, name, params);
+		const returnValue = store.ctxRequest<T>(ctx, name, params);
 
 		//reporter
 		debugReporter(
@@ -526,9 +529,10 @@ export class Emitter {
 	/**
 	 * As `request`, but tolerates having no handler.
 	 */
-	demand(name: string, params?: unknown): unknown {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- defaults to the pre-2.0 contract; pass T to narrow
+	demand<T = any>(name: string, params?: unknown): T {
 		//evaluate and return response
-		const returnValue = store.demand(name, params);
+		const returnValue = store.demand<T>(name, params);
 
 		//reporter
 		debugReporter("debug", name, "Demand for '" + name + "' return '" + returnValue + "' for parameters ", params);

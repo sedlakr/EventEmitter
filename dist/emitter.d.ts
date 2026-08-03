@@ -11,7 +11,7 @@ import { Timer } from "./timer.js";
  * internals pass rather than smuggled into a type-only port.
  */
 export interface DecoratedHandler {
-    (...args: unknown[]): unknown;
+    (...args: any[]): unknown;
     /** On a subscriber: the bound wrappers created for it, one per binding. */
     handlers?: DecoratedHandler[];
     /** On a bound wrapper: the function actually passed to addEventListener. */
@@ -48,15 +48,15 @@ export declare class Emitter {
     /**
      * Dispatches to exactly one handler and returns its value.
      */
-    request(name: string, params?: unknown): unknown;
+    request<T = any>(name: string, params?: unknown): T;
     /**
      * As `request`, restricted to handlers sharing this emitter's context.
      */
-    ctxRequest(name: string, params?: unknown): unknown;
+    ctxRequest<T = any>(name: string, params?: unknown): T;
     /**
      * As `request`, but tolerates having no handler.
      */
-    demand(name: string, params?: unknown): unknown;
+    demand<T = any>(name: string, params?: unknown): T;
     /**
      * How many handlers listen to an event.
      */

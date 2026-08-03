@@ -1,4 +1,4 @@
-/*! @sedlak.r/mq@2.0.0-rc.2 */
+/*! @sedlak.r/mq@2.0.0-rc.3 */
 (function() {
 	//#region src/context.ts
 	/**
@@ -162,7 +162,7 @@
 			return ctxEvent(this.store, ctx, normalized).length;
 		}
 	};
-	Store.prototype.version = "2.0.0-rc.2";
+	Store.prototype.version = "2.0.0-rc.3";
 	//#endregion
 	//#region src/timer.ts
 	/**
@@ -201,7 +201,7 @@
 			}
 		}
 	};
-	Timer.prototype.version = "2.0.0-rc.2";
+	Timer.prototype.version = "2.0.0-rc.3";
 	//#endregion
 	//#region src/emitter.ts
 	/**
@@ -568,7 +568,7 @@
 			console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 		}
 	};
-	Emitter.prototype.version = "2.0.0-rc.2";
+	Emitter.prototype.version = "2.0.0-rc.3";
 	//#endregion
 	//#region src/pure.ts
 	/** The shared, context-less emitter. Cannot be rebound with `in()`. */

@@ -1,4 +1,4 @@
-/*! @sedlak.r/mq@2.0.0-rc.2 */
+/*! @sedlak.r/mq@2.0.0-rc.3 */
 //#region src/context.ts
 /**
 * The sentinel context meaning "no context was set".
@@ -161,7 +161,7 @@ var Store = class {
 		return ctxEvent(this.store, ctx, normalized).length;
 	}
 };
-Store.prototype.version = "2.0.0-rc.2";
+Store.prototype.version = "2.0.0-rc.3";
 //#endregion
 //#region src/timer.ts
 /**
@@ -200,7 +200,7 @@ var Timer = class {
 		}
 	}
 };
-Timer.prototype.version = "2.0.0-rc.2";
+Timer.prototype.version = "2.0.0-rc.3";
 //#endregion
 //#region src/emitter.ts
 /**
@@ -567,10 +567,51 @@ var Emitter = class Emitter {
 		console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 	}
 };
-Emitter.prototype.version = "2.0.0-rc.2";
+Emitter.prototype.version = "2.0.0-rc.3";
 //#endregion
 //#region src/pure.ts
 /** The shared, context-less emitter. Cannot be rebound with `in()`. */
 var EventEmitter = new Emitter(true);
 //#endregion
-export { StoreRecord as a, Store as i, Emitter as n, getMqDefault as o, Timer as r, setMqDefault as s, EventEmitter as t };
+Object.defineProperty(exports, "Emitter", {
+	enumerable: true,
+	get: function() {
+		return Emitter;
+	}
+});
+Object.defineProperty(exports, "EventEmitter", {
+	enumerable: true,
+	get: function() {
+		return EventEmitter;
+	}
+});
+Object.defineProperty(exports, "Store", {
+	enumerable: true,
+	get: function() {
+		return Store;
+	}
+});
+Object.defineProperty(exports, "StoreRecord", {
+	enumerable: true,
+	get: function() {
+		return StoreRecord;
+	}
+});
+Object.defineProperty(exports, "Timer", {
+	enumerable: true,
+	get: function() {
+		return Timer;
+	}
+});
+Object.defineProperty(exports, "getMqDefault", {
+	enumerable: true,
+	get: function() {
+		return getMqDefault;
+	}
+});
+Object.defineProperty(exports, "setMqDefault", {
+	enumerable: true,
+	get: function() {
+		return setMqDefault;
+	}
+});
