@@ -1,16 +1,13 @@
 <!DOCTYPE html>
-<html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title></title>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>EventEmitter dev playground</title>
 
-    <script src="src/mq.js" type="text/javascript"></script>
-
-    <script src="src/data/mq.timer.js" type="text/javascript"></script>
-    <script src="src/data/mq.store.js" type="text/javascript"></script>
-    <script src="src/data/mq.emitter.js" type="text/javascript"></script>
-
-    <script src="src/mq.static.js" type="text/javascript"></script>
+	<!-- The entry pulls in the five sources in load order; `npm run dev` serves this. -->
+	<script type="module" src="/src/index.js"></script>
 </head>
-<body />
+<body>
+<p>Open the console: <code>EventEmitter</code> and <code>MQ</code> are on the global scope.</p>
+</body>
 </html>

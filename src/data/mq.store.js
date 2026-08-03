@@ -1,4 +1,3 @@
-/*global MQ*/
 MQ.Store = (function (MQ, p) {
 	"use strict";
 
@@ -105,6 +104,10 @@ MQ.Store = (function (MQ, p) {
 
 		//error
 		if (length > 1) {
+			//TODO: throws a string where every other error path throws an Error.
+			//Left as-is so the toolchain migration stays behaviour-neutral; fixing
+			//it is a breaking change for anyone catching this.
+			//eslint-disable-next-line no-throw-literal
 			throw "EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.";
 		}
 		//get data if handler exists
@@ -181,6 +184,8 @@ MQ.Store = (function (MQ, p) {
 			isDefault = context === MQ.mqDefault;
 
 		for (key in store) {
+			//TODO: superseded when `store` becomes a Map.
+			//eslint-disable-next-line no-prototype-builtins
 			if (store.hasOwnProperty(key)) {
 				//load data
 				data = store[key];

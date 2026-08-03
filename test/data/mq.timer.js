@@ -1,4 +1,3 @@
-/*global MQ, describe, it*/
 describe("The MQ.Timer", function () {
 	"use strict";
 
@@ -8,36 +7,39 @@ describe("The MQ.Timer", function () {
 		expect(timer.timeout).toBe(30);
 	});
 
-	it("The timer invokes a callback function after the specified time", function (done) {
-		var timer,
-			timeout = 500,
+	it("The timer invokes a callback function after the specified time", function () {
+		var timeout = 500,
 			start = new Date();
 
-		timer = new MQ.Timer(timeout, function () {
-			var delta = new Date() - start;
+		return new Promise(function (resolve) {
+			var timer = new MQ.Timer(timeout, function () {
+				var delta = new Date() - start;
 
-			expect(timeout <= delta).toBeTruthy();
-			done();
+				expect(timeout <= delta).toBeTruthy();
+				resolve();
+			});
+
+			timer.run();
 		});
-		timer.run();
 	});
 
-	it("The method cancel stops the timer", function (done) {
-		var timer,
-			timeout = 50,
+	it("The method cancel stops the timer", function () {
+		var timeout = 50,
 			defused = true;
 
-		timer = new MQ.Timer(timeout, function () {
-			defused = false;
+		return new Promise(function (resolve) {
+			var timer = new MQ.Timer(timeout, function () {
+				defused = false;
+			});
+
+			timer.run();
+			timer.cancel();
+
+			setTimeout(function () {
+				expect(defused).toBeTruthy();
+				resolve();
+			}, timeout);
 		});
-
-		timer.run();
-		timer.cancel();
-
-		setTimeout(function () {
-			expect(defused).toBeTruthy();
-			done();
-		}, timeout);
 	});
 
 	it("When a timer is not running, the cancel method has no effect", function () {

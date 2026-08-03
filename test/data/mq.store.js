@@ -1,4 +1,3 @@
-/*global MQ, describe, it, beforeEach, spyOn*/
 describe("The MQ.Store", function () {
 	"use strict";
 
@@ -19,7 +18,7 @@ describe("The MQ.Store", function () {
 		var store = new MQ.Store(),
 			context = {};
 
-		spyOn(handler, "counter").and.callThrough();
+		vi.spyOn(handler, "counter");
 
 		store.save(context, "test", handler.counter);
 
@@ -42,7 +41,7 @@ describe("The MQ.Store", function () {
 			context = {},
 			returned;
 
-		spyOn(handler, "counter").and.callThrough();
+		vi.spyOn(handler, "counter");
 
 		store.save(context, "test", handler.counter);
 

@@ -1,4 +1,3 @@
-/*global EventEmitter, describe, it*/
 describe("MQ - base", function () {
 	"use strict";
 
@@ -112,24 +111,26 @@ describe("MQ - base", function () {
 		emitter.unsubscribe("test", handler2);
 	});
 
-	it("create new emitter and send notify", function (done) {
+	it("create new emitter and send notify", function () {
 		var start,
 			length,
 			handler,
 			context = {},
 			emitter = EventEmitter.create(context);
 
-		handler = function () {
-			length = new Date().getTime() - start;
-			expect(length).toBeGreaterThan(29);
-			emitter.unsubscribe("test", handler);
-			done();
-		};
-		emitter.subscribe("test", handler);
+		return new Promise(function (resolve) {
+			handler = function () {
+				length = new Date().getTime() - start;
+				expect(length).toBeGreaterThan(29);
+				emitter.unsubscribe("test", handler);
+				resolve();
+			};
+			emitter.subscribe("test", handler);
 
-		start = new Date().getTime();
+			start = new Date().getTime();
 
-		emitter.notify("test", {start: start});
+			emitter.notify("test", {start: start});
+		});
 	});
 
 	it("create new emitter and send event and than destroy all", function () {
@@ -209,7 +210,8 @@ describe("MQ - base", function () {
 	 * @param {Element} target
 	 */
 	function simulateClick(element, type, target) {
-		var fakeEvent = /** @type {Event} */{};
+		/** @type {Event} */
+		var fakeEvent;
 
 		if (document.createEvent) {
 			fakeEvent = document.createEvent("HTMLEvents");

@@ -7,22 +7,35 @@ simple to use it.
 
 ### How to install
 
-Download and install [NodeJs](https://nodejs.org/en/)
+Install [Node.js](https://nodejs.org/en/) 22 or 24 (LTS lines - jsdom, used by the
+test suite, does not support odd-numbered releases), then:
 
-Run command `npm install --force`
+```bash
+npm install
+```
+
+### Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Serves `index.html` with the sources loaded as modules |
+| `npm test` | Runs the spec suite (Vitest + jsdom) |
+| `npm run test:watch` | Same, in watch mode |
+| `npm run test:coverage` | Spec suite with a V8 coverage report |
+| `npm run bench` | Benchmarks `MQ.Store` removal cost |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier, in place |
+| `npm run build` | Writes `dist/mq.js` and `dist/mq.min.js` |
 
 ### How to release
 
-- install
+- `npm install`
 - commit changes
-- bump version in package json
-- run grunt default task
-- run npm publish in root directory
+- bump the version in `package.json` and add a `CHANGELOG.md` entry
+- `npm run build`
+- `npm publish` in the root directory
 
-### Test status on CodeShip
-![CodeShip status](https://codeship.com/projects/3e312a00-5f7a-0133-10a2-5684d7134b37/status?branch=master "CodeShip status")
-
-[CodeShip Continuous integration project](https://codeship.com/projects/111793)
+`prepublishOnly` re-runs lint, tests and the build, so a broken tree cannot be published.
 
 ### Methods
 

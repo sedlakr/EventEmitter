@@ -8,20 +8,26 @@
     ".": "./dist/mq.min.js",
     "./*": "./dist/*.js"
   },
-  "dependencies": {},
-  "devDependencies": {
-    "eslint": "^8.26.0",
-    "grunt": "^1.5.3",
-    "grunt-cli": "^1.4.3",
-    "grunt-contrib-clean": "^2.0.1",
-    "grunt-contrib-concat": "^2.1.0",
-    "grunt-contrib-jasmine": "^3.0.0",
-    "grunt-contrib-uglify": "^5.2.2",
-    "grunt-contrib-watch": "^1.1.0",
-    "grunt-template-jasmine-istanbul": "^0.5.0"
-  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "scripts": {
-    "test": "grunt test"
+    "dev": "vite",
+    "build": "vite build && vite build --mode min",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "bench": "vitest bench --run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sedlakr/EventEmitter.git"
   },
   "publishConfig": {
     "access": "public"
@@ -35,5 +41,15 @@
       "name": "Stanislav Hacker"
     }
   ],
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.0",
+    "globals": "^17.9.0",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.9.6",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
 }

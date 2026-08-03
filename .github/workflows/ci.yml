@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # jsdom supports LTS lines only, so odd-numbered Node releases are out.
+        node: [22, 24]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run format:check
+
+      - run: npm test
+
+      - run: npm run build
+
+      # The published artefact is the bundle, not the sources, so prove the
+      # bundle itself still installs the globals and dispatches an event.
+      - name: Smoke test the built bundle
+        run: |
+          node -e "
+            require('./dist/mq.min.js');
+            const emitter = EventEmitter.create({});
+            let seen = false;
+            emitter.subscribe('ci', () => { seen = true; });
+            emitter.event('ci');
+            if (!seen) { throw new Error('bundled EventEmitter did not dispatch'); }
+            console.log('bundle OK');
+          "

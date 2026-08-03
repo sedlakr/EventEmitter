@@ -1,4 +1,3 @@
-/*global MQ*/
 MQ.Timer = (function (MQ, p) {
 	"use strict";
 

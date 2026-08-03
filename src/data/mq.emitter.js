@@ -1,4 +1,3 @@
-/*global MQ*/
 MQ.Emitter = (function (MQ, p) {
 	"use strict";
 
