@@ -55,5 +55,4 @@ MQ.Timer = (function (MQ, p) {
 	//noinspection JSUnusedGlobalSymbols
 	p.version = "1.0";
 	return Timer;
-
-}(MQ));
+})(MQ);

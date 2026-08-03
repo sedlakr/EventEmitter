@@ -25,10 +25,10 @@ MQ.Store = (function (MQ, p) {
 	 * @param {string} name
 	 * @returns {Array.<StoreRecord>}
 	 */
-	function ctxEvent(store, context, name){
+	function ctxEvent(store, context, name) {
 		const data = event(store, name);
 
-		return data.filter(item => item.context === context);
+		return data.filter((item) => item.context === context);
 	}
 
 	//noinspection JSValidateJSDoc
@@ -39,9 +39,7 @@ MQ.Store = (function (MQ, p) {
 	 */
 	function evaluate(data, params) {
 		//iterate
-		let i,
-			length,
-			record;
+		let i, length, record;
 
 		//clone data and read length
 		data = data.slice(0);
@@ -75,7 +73,11 @@ MQ.Store = (function (MQ, p) {
 			throw new Error("EventEmitter: Can not make request on event that has not handler for '" + name + "'.");
 		}
 		if (length > 1) {
-			throw new Error("EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.");
+			throw new Error(
+				"EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('" +
+					name +
+					"') instead.",
+			);
 		}
 		//get record
 		record = data[0];
@@ -83,7 +85,9 @@ MQ.Store = (function (MQ, p) {
 		result = record.handler.apply(record.context, params ? [params] : []);
 		//no return
 		if (result === undefined) {
-			console.warn("EventEmitter: Return from request '" + name + "' is empty! This is might not be valid state.");
+			console.warn(
+				"EventEmitter: Return from request '" + name + "' is empty! This is might not be valid state.",
+			);
 		}
 		//return
 		return result;
@@ -108,7 +112,11 @@ MQ.Store = (function (MQ, p) {
 			//Left as-is so the toolchain migration stays behaviour-neutral; fixing
 			//it is a breaking change for anyone catching this.
 			//eslint-disable-next-line no-throw-literal
-			throw "EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.";
+			throw (
+				"EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" +
+				name +
+				"') instead."
+			);
 		}
 		//get data if handler exists
 		if (length) {
@@ -158,7 +166,7 @@ MQ.Store = (function (MQ, p) {
 				//remove right context and right handler
 				canRemove = handler && record.context === context && record.handler === handler;
 				//remove right context
-				canRemove = canRemove || !handler && record.context === context;
+				canRemove = canRemove || (!handler && record.context === context);
 
 				record.removed = canRemove;
 				if (canRemove) {
@@ -369,9 +377,7 @@ MQ.Store = (function (MQ, p) {
 		return watching(ctxEvent(this.store, ctx, name));
 	};
 
-
 	//noinspection JSUnusedGlobalSymbols
 	p.version = "1.0";
 	return Store;
-
-}(MQ));
+})(MQ);

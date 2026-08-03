@@ -5,7 +5,7 @@
 	globalThis.MQ = {};
 	//#endregion
 	//#region src/data/mq.timer.js
-	MQ.Timer = function(MQ, p) {
+	MQ.Timer = (function(MQ, p) {
 		"use strict";
 		/**
 		* Timer for emitter
@@ -48,10 +48,10 @@
 		}
 		p.version = "1.0";
 		return Timer;
-	}(MQ);
+	})(MQ);
 	//#endregion
 	//#region src/data/mq.store.js
-	MQ.Store = function(MQ, p) {
+	MQ.Store = (function(MQ, p) {
 		"use strict";
 		/**
 		* Event name create
@@ -290,10 +290,10 @@
 		};
 		p.version = "1.0";
 		return Store;
-	}(MQ);
+	})(MQ);
 	//#endregion
 	//#region src/data/mq.emitter.js
-	MQ.Emitter = function(MQ, p) {
+	MQ.Emitter = (function(MQ, p) {
 		"use strict";
 		let timer, notifyQueue = [], debugFilters = [], debugMode = false, simpleMode = false, store = new MQ.Store();
 		/**
@@ -709,7 +709,7 @@
 		};
 		p.version = "1.0";
 		return Emitter;
-	}(MQ);
+	})(MQ);
 	//#endregion
 	//#region src/mq.static.js
 	if (globalThis.EventEmitter) console.warn(" EventEmitter already exists on globalThis, redefining");

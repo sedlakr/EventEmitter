@@ -25,7 +25,7 @@ describe("The Emitter", function () {
 		return {
 			cancelBubble: false,
 			preventDefault: function () {},
-			stopPropagation: function () {}
+			stopPropagation: function () {},
 		};
 	}
 
@@ -110,7 +110,9 @@ describe("The Emitter", function () {
 
 		expect(function () {
 			emitter.in(null);
-		}).toThrowError("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
+		}).toThrowError(
+			"EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.",
+		);
 	});
 
 	it("Enable debug mode", function () {

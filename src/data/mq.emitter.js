@@ -41,9 +41,11 @@ MQ.Emitter = (function (MQ, p) {
 		 * Done
 		 * @param {Event} e
 		 */
-		handler.eventDoneRuntime = handler.eventDoneRuntime || function (e) {
-			handler(globalThis.event || e);
-		};
+		handler.eventDoneRuntime =
+			handler.eventDoneRuntime ||
+			function (e) {
+				handler(globalThis.event || e);
+			};
 
 		//noinspection JSUnresolvedVariable
 		element.addEventListener(eventType, handler.eventDoneRuntime, eventOptions ?? false);
@@ -104,7 +106,7 @@ MQ.Emitter = (function (MQ, p) {
 			//event convert
 			event = event || globalThis.event;
 			//check date
-			if (clickStart > (new Date()).getTime() - 400) {
+			if (clickStart > new Date().getTime() - 400) {
 				clickCount += 1;
 				if (clickCount === 3) {
 					clickCount = 0;
@@ -201,7 +203,7 @@ MQ.Emitter = (function (MQ, p) {
 				element: null,
 				name: nameOrElement,
 				handler: nameOrHandler,
-				params: paramsOrUndefined || []
+				params: paramsOrUndefined || [],
 			};
 		}
 
@@ -211,13 +213,17 @@ MQ.Emitter = (function (MQ, p) {
 		const isWindow = nameOrElement === globalThis;
 
 		//check
-		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
+		if (
+			(isElement || isWindow || isDocument) &&
+			typeof nameOrHandler === "string" &&
+			typeof handler === "function"
+		) {
 			//return
 			return {
 				element: nameOrElement,
 				name: nameOrHandler,
 				handler: handler,
-				params: paramsOrUndefined || []
+				params: paramsOrUndefined || [],
 			};
 		}
 
@@ -240,7 +246,7 @@ MQ.Emitter = (function (MQ, p) {
 			return {
 				element: null,
 				name: null,
-				handler: null
+				handler: null,
 			};
 		}
 
@@ -250,7 +256,7 @@ MQ.Emitter = (function (MQ, p) {
 			return {
 				element: null,
 				name: nameOrElement,
-				handler: nameOrHandler
+				handler: nameOrHandler,
 			};
 		}
 
@@ -260,12 +266,16 @@ MQ.Emitter = (function (MQ, p) {
 		const isWindow = nameOrElement === globalThis;
 
 		//check
-		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
+		if (
+			(isElement || isWindow || isDocument) &&
+			typeof nameOrHandler === "string" &&
+			typeof handler === "function"
+		) {
 			//return
 			return {
 				element: nameOrElement,
 				name: nameOrHandler,
-				handler: handler
+				handler: handler,
 			};
 		}
 
@@ -301,11 +311,11 @@ MQ.Emitter = (function (MQ, p) {
 	 */
 	function runQueue() {
 		//run
-		let queue = /** @type {NotifyQueueItem}*/notifyQueue.shift();
+		let queue = /** @type {NotifyQueueItem}*/ notifyQueue.shift();
 
 		while (queue) {
 			store.evaluate(queue.name, queue.params);
-			queue = /** @type {NotifyQueueItem}*/notifyQueue.shift();
+			queue = /** @type {NotifyQueueItem}*/ notifyQueue.shift();
 		}
 	}
 
@@ -356,7 +366,7 @@ MQ.Emitter = (function (MQ, p) {
 	 * @returns {MQ.Timer}
 	 */
 	p.notify = function (name, params) {
-		let queue = /** @type {NotifyQueueItem}*/{};
+		let queue = /** @type {NotifyQueueItem}*/ {};
 
 		//reporter
 		debugReporter("debug", name, "Notify for '" + name + "' send with parameters ", params);
@@ -377,7 +387,7 @@ MQ.Emitter = (function (MQ, p) {
 			timer.run();
 		}
 		//return timer
-		return /** @type {MQ.Timer}*/timer;
+		return /** @type {MQ.Timer}*/ timer;
 	};
 
 	/**
@@ -406,14 +416,21 @@ MQ.Emitter = (function (MQ, p) {
 		const ctx = this.context;
 
 		if (ctx === MQ.mqDefault) {
-			throw new Error("Request with context is available only on instances with custom context. Current context is default. ");
+			throw new Error(
+				"Request with context is available only on instances with custom context. Current context is default. ",
+			);
 		}
 
 		//evaluate and return response
 		let returnValue = store.ctxRequest(ctx, name, params);
 
 		//reporter
-		debugReporter("debug", name, "Context request for '" + name + "' return '" + returnValue + "' for parameters ", params);
+		debugReporter(
+			"debug",
+			name,
+			"Context request for '" + name + "' return '" + returnValue + "' for parameters ",
+			params,
+		);
 		//return data
 		return returnValue;
 	};
@@ -458,7 +475,9 @@ MQ.Emitter = (function (MQ, p) {
 		const ctx = this.context;
 
 		if (ctx === MQ.mqDefault) {
-			throw new Error("Watching with context is available only on instances with custom context. Current context is default. ");
+			throw new Error(
+				"Watching with context is available only on instances with custom context. Current context is default. ",
+			);
 		}
 
 		//evaluate and return response
@@ -478,7 +497,7 @@ MQ.Emitter = (function (MQ, p) {
 	 */
 	function createHandler(context, data) {
 		//create name by event name
-		let handlers = data.handler.handlers = data.handler.handlers || [];
+		let handlers = (data.handler.handlers = data.handler.handlers || []);
 
 		/**
 		 * Handler
@@ -523,7 +542,6 @@ MQ.Emitter = (function (MQ, p) {
 			if (handlerElement === currentElement && currentType === handlerType && handlerContext === context) {
 				//remove event
 				removeEvent(data.element, data.name, currentHandler);
-
 			} else {
 				newHandlers.push(currentHandler);
 			}
@@ -550,7 +568,7 @@ MQ.Emitter = (function (MQ, p) {
 		if (data.element) {
 			//noinspection JSUnresolvedVariable
 			addEvent(data.element, data.name, createHandler(context, data), eventOptions);
-		//no element event
+			//no element event
 		} else {
 			//save to storage
 			store.save(this.context, data.name, data.handler);
@@ -571,14 +589,16 @@ MQ.Emitter = (function (MQ, p) {
 
 		//this is weird
 		if (this.context === MQ.mqDefault && !data.name && !data.handler) {
-			console.warn("EventEmitter: You are calling unsubscribe method without parameters. This is unbind all event through application!");
+			console.warn(
+				"EventEmitter: You are calling unsubscribe method without parameters. This is unbind all event through application!",
+			);
 		}
 
 		if (data.element) {
 			//destroy handler
 			destroyHandler(this.context, data);
 
-		//no element event
+			//no element event
 		} else {
 			//remove from storage
 			store.remove(this.context, data.name, data.handler);
@@ -612,7 +632,9 @@ MQ.Emitter = (function (MQ, p) {
 
 		//static
 		if (isStatic) {
-			throw new Error("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
+			throw new Error(
+				"EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.",
+			);
 		}
 		//set new context
 		this.context = context;
@@ -638,12 +660,13 @@ MQ.Emitter = (function (MQ, p) {
 		} else {
 			p.getStore = undefined;
 		}
-		console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
+		console.info(
+			"EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""),
+		);
 	};
 
 	//noinspection JSUnusedGlobalSymbols
 	p.version = "1.0";
 	//return event
 	return Emitter;
-
-}(MQ));
+})(MQ);

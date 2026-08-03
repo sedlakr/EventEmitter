@@ -1,6 +1,7 @@
 # EventEmitter
 
 ### Info
+
 Message queue for events. Is used for sending events, requests, notify information and
 binding events on dom elements. It is a minimalistic library (< 8kB min file) and is really
 simple to use it.
@@ -16,16 +17,16 @@ npm install
 
 ### Scripts
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Serves `index.html` with the sources loaded as modules |
-| `npm test` | Runs the spec suite (Vitest + jsdom) |
-| `npm run test:watch` | Same, in watch mode |
-| `npm run test:coverage` | Spec suite with a V8 coverage report |
-| `npm run bench` | Benchmarks `MQ.Store` removal cost |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier, in place |
-| `npm run build` | Writes `dist/mq.js` and `dist/mq.min.js` |
+| Command                 | What it does                                           |
+| ----------------------- | ------------------------------------------------------ |
+| `npm run dev`           | Serves `index.html` with the sources loaded as modules |
+| `npm test`              | Runs the spec suite (Vitest + jsdom)                   |
+| `npm run test:watch`    | Same, in watch mode                                    |
+| `npm run test:coverage` | Spec suite with a V8 coverage report                   |
+| `npm run bench`         | Benchmarks `MQ.Store` removal cost                     |
+| `npm run lint`          | ESLint                                                 |
+| `npm run format`        | Prettier, in place                                     |
+| `npm run build`         | Writes `dist/mq.js` and `dist/mq.min.js`               |
 
 ### How to release
 
@@ -100,7 +101,7 @@ Same as `.watching` above, but looks up for event with same context as callee
 #### .debugMode(state, filters)
 
 You can turn on debug mode and filter some specific events. Other events will be writen into
- browser console with all parameters.
+browser console with all parameters.
 
 ### How to use it
 
@@ -110,7 +111,7 @@ You can use this library in global way. There is global variable `EventEmitter`.
 
 ```javascript
 EventEmitter.subscribe("MyEvent", function (data) {
-    console.log("You handler for event");
+	console.log("You handler for event");
 });
 EventEmitter.event("MyEvent");
 EventEmitter.event("MyEvent", [true, "param2"]);
@@ -124,7 +125,7 @@ you don't have context, so in handler is invalid pointer on `this`. We can make 
 
 ```javascript
 var handler = function (data) {
-  console.log("You handler for event");
+	console.log("You handler for event");
 };
 EventEmitter.subscribe("MyEvent", handler);
 EventEmitter.event("MyEvent");
@@ -138,10 +139,10 @@ So now we can unsubscribe our event. Now we must solve the second problem. Conte
 
 ```javascript
 var emitter,
-    context = {},
-    handler = function (data) {
-  console.log("You handler for event with context from 'context' variable.");
-};
+	context = {},
+	handler = function (data) {
+		console.log("You handler for event with context from 'context' variable.");
+	};
 emitter = EventEmitter.create(context);
 emitter.subscribe("MyEvent", handler);
 emitter.event("MyEvent");
@@ -157,10 +158,10 @@ will be destroyed. So we can update last example for complete clean all events.
 
 ```javascript
 var emitter,
-    context = {},
-    handler = function (data) {
-  console.log("You handler for event wit context from 'context' variable.");
-};
+	context = {},
+	handler = function (data) {
+		console.log("You handler for event wit context from 'context' variable.");
+	};
 emitter = EventEmitter.create(context);
 emitter.subscribe("MyEvent", handler);
 emitter.subscribe("MyEventSecond", handler);
@@ -171,20 +172,20 @@ emitter.unsubscribe();
 
 And last part is binding to DOM elements. It's easy like others thing before.
 
-
 #### Example 3
 
 ```javascript
 var emitter,
-    context = {},
-    handler = function (data) {
-  console.log("Clicked on body and destroy.");
-  emitter.unsubscribe();
-  //emitter.unsubscribe(document.body, "click", handler);
-};
+	context = {},
+	handler = function (data) {
+		console.log("Clicked on body and destroy.");
+		emitter.unsubscribe();
+		//emitter.unsubscribe(document.body, "click", handler);
+	};
 emitter = EventEmitter.create(context);
 emitter.subscribe(document.body, "click", handler);
 ```
+
 # Licence
 
 MIT License

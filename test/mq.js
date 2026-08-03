@@ -16,17 +16,17 @@ describe("MQ - base", function () {
 
 		handler = function (params) {
 			count++;
-			expect(params).toEqual({params1: "test"});
+			expect(params).toEqual({ params1: "test" });
 		};
 
 		emitter.subscribe("test", handler);
 
-		emitter.event("test", {params1: "test"});
+		emitter.event("test", { params1: "test" });
 		expect(count).toBe(1);
 
 		emitter.unsubscribe("test", handler);
 
-		emitter.event("test", {params1: "test"});
+		emitter.event("test", { params1: "test" });
 		expect(count).toBe(1);
 	});
 
@@ -40,22 +40,21 @@ describe("MQ - base", function () {
 
 		handler = function (params) {
 			count++;
-			expect(params).toEqual({params1: 10});
+			expect(params).toEqual({ params1: 10 });
 			return params.params1;
 		};
-		handler2 = function () {
-		};
+		handler2 = function () {};
 
 		emitter.subscribe("test", handler);
 
-		returned = emitter.request("test", {params1: 10});
+		returned = emitter.request("test", { params1: 10 });
 		expect(count).toBe(1);
 		expect(returned).toBe(10);
 
 		emitter.unsubscribe("test", handler);
 
 		expect(function () {
-			emitter.request("request", {params1: 10});
+			emitter.request("request", { params1: 10 });
 		}).toThrowError("EventEmitter: Can not make request on event that has not handler for 'request'.");
 
 		expect(count).toBe(1);
@@ -64,8 +63,10 @@ describe("MQ - base", function () {
 		emitter.subscribe("test", handler2);
 
 		expect(function () {
-			emitter.request("test", {params1: 10});
-		}).toThrowError("EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('test') instead.");
+			emitter.request("test", { params1: 10 });
+		}).toThrowError(
+			"EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('test') instead.",
+		);
 
 		emitter.unsubscribe("test", handler);
 		emitter.unsubscribe("test", handler2);
@@ -81,21 +82,20 @@ describe("MQ - base", function () {
 
 		handler = function (params) {
 			count++;
-			expect(params).toEqual({params1: 10});
+			expect(params).toEqual({ params1: 10 });
 			return params.params1;
 		};
-		handler2 = function () {
-		};
+		handler2 = function () {};
 
 		emitter.subscribe("test", handler);
 
-		returned = emitter.demand("test", {params1: 10});
+		returned = emitter.demand("test", { params1: 10 });
 		expect(count).toBe(1);
 		expect(returned).toBe(10);
 
 		emitter.unsubscribe("test", handler);
 
-		returned = emitter.demand("test", {params1: 10});
+		returned = emitter.demand("test", { params1: 10 });
 
 		expect(count).toBe(1);
 		expect(returned).toBeUndefined();
@@ -104,8 +104,10 @@ describe("MQ - base", function () {
 		emitter.subscribe("test", handler2);
 
 		expect(function () {
-			emitter.demand("test", {params1: 10});
-		}).toThrow("EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('test') instead.");
+			emitter.demand("test", { params1: 10 });
+		}).toThrow(
+			"EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('test') instead.",
+		);
 
 		emitter.unsubscribe("test", handler);
 		emitter.unsubscribe("test", handler2);
@@ -129,7 +131,7 @@ describe("MQ - base", function () {
 
 			start = new Date().getTime();
 
-			emitter.notify("test", {start: start});
+			emitter.notify("test", { start: start });
 		});
 	});
 
@@ -141,17 +143,17 @@ describe("MQ - base", function () {
 
 		handler = function (params) {
 			count++;
-			expect(params).toEqual({params1: "test"});
+			expect(params).toEqual({ params1: "test" });
 		};
 
 		emitter.subscribe("test", handler);
 
-		emitter.event("test", {params1: "test"});
+		emitter.event("test", { params1: "test" });
 		expect(count).toBe(1);
 
 		emitter.unsubscribe();
 
-		emitter.event("test", {params1: "test"});
+		emitter.event("test", { params1: "test" });
 		expect(count).toBe(1);
 	});
 
@@ -160,8 +162,7 @@ describe("MQ - base", function () {
 			context = {},
 			emitter = EventEmitter.create(context);
 
-		handler = function () {
-		};
+		handler = function () {};
 
 		emitter.subscribe("test", handler);
 
@@ -186,7 +187,6 @@ describe("MQ - base", function () {
 			emitter.unsubscribe("test", handler1);
 			called1 = true;
 		};
-
 
 		handler2 = function () {
 			emitter.unsubscribe("test", handler2);
@@ -366,7 +366,6 @@ describe("MQ - base", function () {
 		expect(counter).toBe(3);
 		simulateClick(dom2, "click", dom2);
 		expect(counter).toBe(3);
-
 	});
 
 	it("bind triple click", function () {
@@ -511,5 +510,4 @@ describe("MQ - base", function () {
 
 		expect(counter).toBe(1);
 	});
-
 });
