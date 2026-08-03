@@ -1,6 +1,6 @@
 /*! @sedlak.r/mq@1.5.0 */
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const require_pure = require("./chunks/pure-FLWKeSsB.js");
+const require_pure = require("./chunks/pure-BFTXnc9t.js");
 //#region src/index.ts
 /**
 * Default entry point - a backward-compatible superset of the old bundle.

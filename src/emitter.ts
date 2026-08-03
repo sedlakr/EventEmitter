@@ -293,6 +293,27 @@ function runQueue(): void {
 }
 
 /**
+ * Element bindings indexed by the context that created them.
+ *
+ * `unsubscribe()` with no arguments has to drain a context's DOM listeners,
+ * and the per-subscriber `handlers` list cannot answer "everything for this
+ * context" - it is reachable only from a handler the caller still holds.
+ *
+ * Keyed weakly so a context that is dropped without being unsubscribed takes
+ * its binding list with it rather than pinning elements in this module.
+ */
+const bindingsByContext = new WeakMap<Context, ElementBinding[]>();
+
+interface ElementBinding {
+	element: EventTarget;
+	type: string;
+	/** The caller's function, whose `handlers` list also has to be pruned. */
+	subscriber: DecoratedHandler;
+	/** The wrapper actually registered with the DOM. */
+	bound: DecoratedHandler;
+}
+
+/**
  * Wraps a subscriber so the DOM hands it `[event, ...params]` bound to the
  * emitter's context, and records it on the handler for later removal.
  */
@@ -312,7 +333,66 @@ function createHandler(context: Context, data: SubscribeParams): DecoratedHandle
 	//add
 	handlers.push(handler);
 
+	//index by context so a no-argument unsubscribe can find it
+	const bindings = bindingsByContext.get(context) || [];
+
+	bindings.push({
+		element: data.element as EventTarget,
+		type: data.name,
+		subscriber: data.handler,
+		bound: handler,
+	});
+	bindingsByContext.set(context, bindings);
+
 	return handler;
+}
+
+/**
+ * Drops one binding from the context index, once its listener is gone.
+ */
+function forgetBinding(context: Context, bound: DecoratedHandler): void {
+	const bindings = bindingsByContext.get(context);
+
+	if (!bindings) {
+		return;
+	}
+
+	const index = bindings.findIndex((binding) => binding.bound === bound);
+
+	if (index >= 0) {
+		bindings.splice(index, 1);
+	}
+}
+
+/**
+ * Unbinds every element listener registered under a context.
+ *
+ * This is what makes `emitter.unsubscribe()` actually tear down DOM
+ * subscriptions, which the README has always claimed it does.
+ */
+function destroyHandlersByContext(context: Context): void {
+	const bindings = bindingsByContext.get(context);
+
+	if (!bindings) {
+		return;
+	}
+
+	for (const binding of bindings.slice(0)) {
+		removeEvent(binding.element, binding.type, binding.bound);
+
+		//keep the subscriber's own list in step
+		const handlers = binding.subscriber.handlers;
+
+		if (handlers) {
+			const index = handlers.indexOf(binding.bound);
+
+			if (index >= 0) {
+				handlers.splice(index, 1);
+			}
+		}
+	}
+
+	bindingsByContext.delete(context);
 }
 
 /**
@@ -336,6 +416,7 @@ function destroyHandler(context: Context, data: UnsubscribeParams): void {
 		) {
 			//remove event
 			removeEvent(data.element!, data.name!, currentHandler as DecoratedHandler);
+			forgetBinding(context, currentHandler);
 		} else {
 			newHandlers.push(currentHandler);
 		}
@@ -539,6 +620,12 @@ export class Emitter {
 		} else {
 			//remove from storage
 			store.remove(this.context, data.name, data.handler as Handler);
+
+			//a bare unsubscribe() means "everything for this context", which
+			//includes element bindings - not just the named-event registry
+			if (!data.name && !data.handler) {
+				destroyHandlersByContext(this.context);
+			}
 		}
 		//return self
 		return this;
@@ -595,7 +682,7 @@ export class Emitter {
 	}
 }
 
-Emitter.prototype.version = "1.0";
+Emitter.prototype.version = __MQ_VERSION__;
 
 /** Exposed so the global namespace can hand out the shared registry. */
 export function getSharedStore(): Store {

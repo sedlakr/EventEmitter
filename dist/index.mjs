@@ -1,5 +1,5 @@
 /*! @sedlak.r/mq@1.5.0 */
-import { a as StoreRecord, i as Store, n as Emitter, o as getMqDefault, r as Timer, s as setMqDefault, t as EventEmitter } from "./chunks/pure-CWcviLNs.mjs";
+import { a as StoreRecord, i as Store, n as Emitter, o as getMqDefault, r as Timer, s as setMqDefault, t as EventEmitter } from "./chunks/pure-CHgxxa1l.mjs";
 //#region src/index.ts
 /**
 * Default entry point - a backward-compatible superset of the old bundle.

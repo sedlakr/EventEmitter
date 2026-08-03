@@ -84,6 +84,14 @@ You can use it for your custom events or bind it to dom element. More informatio
 This method is used for stop listening for events, that are triggered by `.event()`, `.notify()` or `.request()`.
 More information in section "How to use it"
 
+Called with no arguments it drops everything registered by that emitter's
+context - both named events and DOM element bindings. Bindings made by other
+contexts on the same element are left alone.
+
+Note that `unsubscribe(name)` with only an event name is **not** remove-by-name:
+it is treated as the no-argument form and drops everything for the context. Pass
+the handler too - `unsubscribe(name, handler)` - to remove a single subscription.
+
 #### .interrupt(event, stopProp, cancelDef)
 
 This function is used to stop browser event. There are parameters for stop propagation
@@ -194,11 +202,14 @@ var emitter,
 	handler = function (data) {
 		console.log("Clicked on body and destroy.");
 		emitter.unsubscribe();
-		//emitter.unsubscribe(document.body, "click", handler);
 	};
 emitter = EventEmitter.create(context);
 emitter.subscribe(document.body, "click", handler);
 ```
+
+The bare `emitter.unsubscribe()` above really does detach the click listener.
+Before 2.0 it did not, and the binding had to be removed explicitly with
+`emitter.unsubscribe(document.body, "click", handler)`.
 
 # Licence
 

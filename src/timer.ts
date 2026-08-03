@@ -45,4 +45,4 @@ export class Timer {
 	}
 }
 
-Timer.prototype.version = "1.0";
+Timer.prototype.version = __MQ_VERSION__;

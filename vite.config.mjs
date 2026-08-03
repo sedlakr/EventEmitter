@@ -53,6 +53,12 @@ export default defineConfig(({ mode }) => {
 	return {
 		plugins: [bannerPlugin(`/*! ${pkg.name}@${pkg.version} */`)],
 
+		// Keeps the `version` property on each class in step with the release
+		// instead of the hardcoded "1.0" it carried for years.
+		define: {
+			__MQ_VERSION__: JSON.stringify(pkg.version),
+		},
+
 		build: {
 			// Only the first pass clears dist, or later passes would delete it.
 			emptyOutDir: isEsm,

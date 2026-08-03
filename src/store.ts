@@ -108,13 +108,11 @@ function demand(data: StoreRecord[], name: string, params?: unknown): unknown {
 
 	//error
 	if (length > 1) {
-		//TODO: throws a string where every other error path throws an Error.
-		//Preserved verbatim - fixing it is a breaking change for anyone
-		//catching this, so it belongs in the behaviour-fix pass.
-		//eslint-disable-next-line no-throw-literal
-		throw ("EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" +
-			name +
-			"') instead.") as unknown as Error;
+		throw new Error(
+			"EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" +
+				name +
+				"') instead.",
+		);
 	}
 	//get data if handler exists
 	if (length) {
@@ -135,10 +133,13 @@ function removeByName(store: StoreData, context: Context, name: string, handler?
 
 	//clear all, no context set
 	if (context === getMqDefault()) {
-		//NOTE: this path replaces the array without marking the discarded
-		//records as removed, so a dispatch already in flight still calls them -
-		//unlike the contextual path below. Preserved as-is; see the behaviour
-		//fix pass.
+		//Mark before discarding: `evaluate` iterates a clone, so a dispatch
+		//already in flight would otherwise keep calling handlers that this
+		//removal just dropped - which is what the contextual branch below
+		//prevents via the same flag.
+		for (const record of data) {
+			record.removed = true;
+		}
 		store[name] = [];
 	} else {
 		//iterate all
@@ -247,4 +248,4 @@ export class Store {
 	}
 }
 
-Store.prototype.version = "1.0";
+Store.prototype.version = __MQ_VERSION__;

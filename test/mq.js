@@ -105,9 +105,20 @@ describe("MQ - base", function () {
 
 		expect(function () {
 			emitter.demand("test", { params1: 10 });
-		}).toThrow(
+		}).toThrowError(
 			"EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('test') instead.",
 		);
+
+		// demand used to throw a bare string, so callers could not read .message
+		var thrown = null;
+
+		try {
+			emitter.demand("test", { params1: 10 });
+		} catch (e) {
+			thrown = e;
+		}
+		expect(thrown).toBeInstanceOf(Error);
+		expect(typeof thrown.message).toBe("string");
 
 		emitter.unsubscribe("test", handler);
 		emitter.unsubscribe("test", handler2);
@@ -509,5 +520,108 @@ describe("MQ - base", function () {
 		emitter.event("COUNTER");
 
 		expect(counter).toBe(1);
+	});
+
+	it("do not call already removed event on the default context", function () {
+		// The contextual path above marked records as removed before dropping
+		// them; the default-context path replaced the array without marking, so
+		// a dispatch already in flight kept calling handlers it had just removed.
+		var remove = false,
+			handlerRemove,
+			handlerCounter,
+			counter = 0;
+
+		handlerRemove = function () {
+			if (remove) {
+				// Both arguments matter: unsubscribe(name) alone is treated as
+				// unsubscribe-everything and routes through removeByContext,
+				// which was never the buggy path.
+				EventEmitter.unsubscribe("DEFAULTCOUNTER", handlerCounter);
+			}
+		};
+		handlerCounter = function () {
+			counter++;
+		};
+
+		EventEmitter.subscribe("DEFAULTCOUNTER", handlerRemove);
+		EventEmitter.subscribe("DEFAULTCOUNTER", handlerCounter);
+
+		EventEmitter.event("DEFAULTCOUNTER");
+		expect(counter).toBe(1);
+
+		// handlerRemove drops handlerCounter mid-dispatch; evaluate() iterates a
+		// clone, so without the removed flag handlerCounter still gets called.
+		remove = true;
+		EventEmitter.event("DEFAULTCOUNTER");
+
+		expect(counter).toBe(1);
+		expect(EventEmitter.watching("DEFAULTCOUNTER")).toBe(0);
+	});
+
+	it("unsubscribe() with no arguments removes dom bindings too", function () {
+		// README examples 2 and 3 have always claimed a bare unsubscribe()
+		// destroys everything for the context, but element bindings survived it.
+		var dom,
+			handler,
+			counter = 0,
+			context = {},
+			emitter = EventEmitter.create(context);
+
+		handler = function () {
+			counter++;
+		};
+
+		dom = document.createElement("div");
+		emitter.subscribe(dom, "click", handler);
+		emitter.subscribe("plain", handler);
+
+		simulateClick(dom, "click", dom);
+		emitter.event("plain");
+		expect(counter).toBe(2);
+
+		emitter.unsubscribe();
+
+		simulateClick(dom, "click", dom);
+		emitter.event("plain");
+		expect(counter).toBe(2);
+		expect(handler.handlers.length).toBe(0);
+	});
+
+	it("unsubscribe() only drops dom bindings of its own context", function () {
+		var dom,
+			handler,
+			keptCount = 0,
+			droppedCount = 0,
+			dropped = EventEmitter.create({}),
+			kept = EventEmitter.create({});
+
+		handler = function () {
+			droppedCount++;
+		};
+
+		dom = document.createElement("div");
+		dropped.subscribe(dom, "click", handler);
+		kept.subscribe(dom, "click", function () {
+			keptCount++;
+		});
+
+		simulateClick(dom, "click", dom);
+		expect(droppedCount).toBe(1);
+		expect(keptCount).toBe(1);
+
+		dropped.unsubscribe();
+
+		simulateClick(dom, "click", dom);
+		expect(droppedCount).toBe(1);
+		expect(keptCount).toBe(2);
+	});
+
+	it("classes report the package version", function () {
+		// Was hardcoded to "1.0" while the package sat at 1.5.0.
+		var expected = EventEmitter.version;
+
+		expect(expected).toMatch(/^\d+\.\d+\.\d+/);
+		expect(new MQ.Store().version).toBe(expected);
+		expect(new MQ.Timer().version).toBe(expected);
 	});
 });

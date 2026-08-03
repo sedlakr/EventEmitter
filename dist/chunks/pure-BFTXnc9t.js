@@ -84,7 +84,7 @@ function request(data, name, params) {
 function demand(data, name, params) {
 	const length = data.length;
 	let result;
-	if (length > 1) throw "EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.";
+	if (length > 1) throw new Error("EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.");
 	if (length) {
 		const record = data[0];
 		result = record.handler.apply(record.context, params ? [params] : []);
@@ -96,8 +96,10 @@ function demand(data, name, params) {
 */
 function removeByName(store, context, name, handler) {
 	const data = event(store, name);
-	if (context === getMqDefault()) store[name] = [];
-	else for (let i = data.length - 1; i >= 0; i--) {
+	if (context === getMqDefault()) {
+		for (const record of data) record.removed = true;
+		store[name] = [];
+	} else for (let i = data.length - 1; i >= 0; i--) {
 		const record = data[i];
 		let canRemove = Boolean(handler) && record.context === context && record.handler === handler;
 		canRemove = canRemove || !handler && record.context === context;
@@ -159,7 +161,7 @@ var Store = class {
 		return ctxEvent(this.store, ctx, normalized).length;
 	}
 };
-Store.prototype.version = "1.0";
+Store.prototype.version = "1.5.0";
 //#endregion
 //#region src/timer.ts
 /**
@@ -198,7 +200,7 @@ var Timer = class {
 		}
 	}
 };
-Timer.prototype.version = "1.0";
+Timer.prototype.version = "1.5.0";
 //#endregion
 //#region src/emitter.ts
 /**
@@ -347,6 +349,17 @@ function runQueue() {
 	}
 }
 /**
+* Element bindings indexed by the context that created them.
+*
+* `unsubscribe()` with no arguments has to drain a context's DOM listeners,
+* and the per-subscriber `handlers` list cannot answer "everything for this
+* context" - it is reachable only from a handler the caller still holds.
+*
+* Keyed weakly so a context that is dropped without being unsubscribed takes
+* its binding list with it rather than pinning elements in this module.
+*/
+var bindingsByContext = /* @__PURE__ */ new WeakMap();
+/**
 * Wraps a subscriber so the DOM hands it `[event, ...params]` bound to the
 * emitter's context, and records it on the handler for later removal.
 */
@@ -360,7 +373,43 @@ function createHandler(context, data) {
 	handler.type = data.name;
 	handler.context = context;
 	handlers.push(handler);
+	const bindings = bindingsByContext.get(context) || [];
+	bindings.push({
+		element: data.element,
+		type: data.name,
+		subscriber: data.handler,
+		bound: handler
+	});
+	bindingsByContext.set(context, bindings);
 	return handler;
+}
+/**
+* Drops one binding from the context index, once its listener is gone.
+*/
+function forgetBinding(context, bound) {
+	const bindings = bindingsByContext.get(context);
+	if (!bindings) return;
+	const index = bindings.findIndex((binding) => binding.bound === bound);
+	if (index >= 0) bindings.splice(index, 1);
+}
+/**
+* Unbinds every element listener registered under a context.
+*
+* This is what makes `emitter.unsubscribe()` actually tear down DOM
+* subscriptions, which the README has always claimed it does.
+*/
+function destroyHandlersByContext(context) {
+	const bindings = bindingsByContext.get(context);
+	if (!bindings) return;
+	for (const binding of bindings.slice(0)) {
+		removeEvent(binding.element, binding.type, binding.bound);
+		const handlers = binding.subscriber.handlers;
+		if (handlers) {
+			const index = handlers.indexOf(binding.bound);
+			if (index >= 0) handlers.splice(index, 1);
+		}
+	}
+	bindingsByContext.delete(context);
 }
 /**
 * Removes the bound handlers matching element + type + context.
@@ -372,8 +421,10 @@ function destroyHandler(context, data) {
 	const handlers = data.handler.handlers || [];
 	for (let i = handlers.length - 1; i >= 0; i--) {
 		const currentHandler = handlers[i];
-		if (currentHandler.element === currentElement && currentType === currentHandler.type && currentHandler.context === context) removeEvent(data.element, data.name, currentHandler);
-		else newHandlers.push(currentHandler);
+		if (currentHandler.element === currentElement && currentType === currentHandler.type && currentHandler.context === context) {
+			removeEvent(data.element, data.name, currentHandler);
+			forgetBinding(context, currentHandler);
+		} else newHandlers.push(currentHandler);
 	}
 	data.handler.handlers = newHandlers;
 }
@@ -481,7 +532,10 @@ var Emitter = class Emitter {
 		const data = normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined);
 		if (this.context === getMqDefault() && !data.name && !data.handler) console.warn("EventEmitter: You are calling unsubscribe method without parameters. This is unbind all event through application!");
 		if (data.element) destroyHandler(this.context, data);
-		else store.remove(this.context, data.name, data.handler);
+		else {
+			store.remove(this.context, data.name, data.handler);
+			if (!data.name && !data.handler) destroyHandlersByContext(this.context);
+		}
 		return this;
 	}
 	/**
@@ -513,10 +567,51 @@ var Emitter = class Emitter {
 		console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 	}
 };
-Emitter.prototype.version = "1.0";
+Emitter.prototype.version = "1.5.0";
 //#endregion
 //#region src/pure.ts
 /** The shared, context-less emitter. Cannot be rebound with `in()`. */
 var EventEmitter = new Emitter(true);
 //#endregion
-export { StoreRecord as a, Store as i, Emitter as n, getMqDefault as o, Timer as r, setMqDefault as s, EventEmitter as t };
+Object.defineProperty(exports, "Emitter", {
+	enumerable: true,
+	get: function() {
+		return Emitter;
+	}
+});
+Object.defineProperty(exports, "EventEmitter", {
+	enumerable: true,
+	get: function() {
+		return EventEmitter;
+	}
+});
+Object.defineProperty(exports, "Store", {
+	enumerable: true,
+	get: function() {
+		return Store;
+	}
+});
+Object.defineProperty(exports, "StoreRecord", {
+	enumerable: true,
+	get: function() {
+		return StoreRecord;
+	}
+});
+Object.defineProperty(exports, "Timer", {
+	enumerable: true,
+	get: function() {
+		return Timer;
+	}
+});
+Object.defineProperty(exports, "getMqDefault", {
+	enumerable: true,
+	get: function() {
+		return getMqDefault;
+	}
+});
+Object.defineProperty(exports, "setMqDefault", {
+	enumerable: true,
+	get: function() {
+		return setMqDefault;
+	}
+});
