@@ -23,7 +23,26 @@ export interface MQNamespace {
      */
     mqDefault: object;
 }
+type EmitterInstance = Emitter;
+type StoreInstance = Store;
+type TimerInstance = Timer;
 declare global {
     var MQ: MQNamespace;
-    var EventEmitter: Emitter;
+    var EventEmitter: EmitterInstance;
+    /**
+     * `EventEmitter` is usable in type position as well as value position -
+     * `private emitter: EventEmitter` is the common annotation in consuming
+     * code. Declared alongside the `var` above, which occupies the value
+     * namespace only.
+     */
+    type EventEmitter = EmitterInstance;
+    /**
+     * Instance types under the `MQ` name, so `foo: MQ.Emitter` resolves.
+     * A types-only namespace emits no value, so it merges with the `var`.
+     */
+    namespace MQ {
+        type Emitter = EmitterInstance;
+        type Store = StoreInstance;
+        type Timer = TimerInstance;
+    }
 }
