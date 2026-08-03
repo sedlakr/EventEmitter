@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
+import tseslint from "typescript-eslint";
 
 /**
  * Replaces the previous `.eslintrc`, which listed ~200 rules by hand and was
@@ -32,18 +33,20 @@ export default [
 		},
 	},
 
+	...tseslint.configs.recommended.map((config) => ({ ...config, files: ["src/**/*.ts"] })),
+
 	{
-		// The sources are loaded as classic scripts that build up a shared `MQ`
-		// namespace, so `MQ` is written across files rather than imported.
-		files: ["src/**/*.js"],
+		files: ["src/**/*.ts"],
 		languageOptions: {
 			ecmaVersion: 2023,
 			sourceType: "module",
-			globals: {
-				...globals.browser,
-				MQ: "writable",
-				EventEmitter: "writable",
-			},
+			globals: globals.browser,
+		},
+		rules: {
+			// The library decorates caller-supplied functions and reads legacy
+			// event properties, so the casts at those boundaries are deliberate.
+			"@typescript-eslint/no-explicit-any": "error",
+			"@typescript-eslint/consistent-type-imports": "error",
 		},
 	},
 

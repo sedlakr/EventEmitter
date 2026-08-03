@@ -107,6 +107,20 @@ browser console with all parameters.
 
 You can use this library in global way. There is global variable `EventEmitter`.
 
+Since 1.6 the same API is also importable, and the package ships its own types:
+
+```javascript
+// installs globalThis.MQ and globalThis.EventEmitter, and exports them
+import { EventEmitter, Emitter, Store, Timer } from "@sedlak.r/mq";
+
+// identical API, but nothing is written to globalThis
+import { EventEmitter } from "@sedlak.r/mq/pure";
+```
+
+Both entries share one registry, so an event sent through the imported emitter
+reaches handlers subscribed through the global one. `require()` works too, and
+`dist/mq.min.js` is still the file to drop into a `<script src>` tag.
+
 #### Example 1
 
 ```javascript

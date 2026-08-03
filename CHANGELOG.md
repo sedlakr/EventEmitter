@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Added
+
+- TypeScript sources, with type declarations shipped in the package
+- ES module and CommonJS builds alongside the existing classic-script bundle
+- `@sedlak.r/mq/pure` entry point - the same API with nothing written to `globalThis`
+
 ### Changed
 
 - build moved from Grunt (concat + uglify) to Vite 8 library mode

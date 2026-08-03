@@ -1,6 +1,6 @@
 import { bench, describe } from "vitest";
 
-import "../src/index.js";
+import "../src/index.ts";
 
 const { MQ } = globalThis;
 

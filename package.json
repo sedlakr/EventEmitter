@@ -2,10 +2,26 @@
 	"name": "@sedlak.r/mq",
 	"version": "1.5.0",
 	"description": "Message queue for events",
-	"source": "src/index.js",
-	"main": "./dist/mq.min.js",
+	"source": "src/index.ts",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"unpkg": "./dist/mq.min.js",
+	"jsdelivr": "./dist/mq.min.js",
 	"exports": {
-		".": "./dist/mq.min.js",
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./pure": {
+			"types": "./dist/pure.d.ts",
+			"import": "./dist/pure.mjs",
+			"require": "./dist/pure.js",
+			"default": "./dist/pure.js"
+		},
+		"./package.json": "./package.json",
 		"./*": "./dist/*.js"
 	},
 	"files": [
@@ -14,7 +30,8 @@
 	],
 	"scripts": {
 		"dev": "vite",
-		"build": "vite build && vite build --mode min",
+		"build": "vite build --mode esm && vite build --mode cjs && vite build && vite build --mode min && tsc",
+		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
@@ -49,6 +66,7 @@
 		"globals": "^17.9.0",
 		"jsdom": "^30.0.1",
 		"prettier": "^3.9.6",
+		"typescript-eslint": "^8.65.0",
 		"vite": "^8.2.0",
 		"vitest": "^4.1.10"
 	}
