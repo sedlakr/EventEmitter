@@ -1,6 +1,6 @@
-/*! @sedlak.r/mq@2.0.0-rc.4 */
+/*! @sedlak.r/mq@2.0.0-rc.5 */
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const require_pure = require("./chunks/pure-f2Yg10QL.js");
+const require_pure = require("./chunks/pure-Czl8TYjd.js");
 //#region src/index.ts
 /**
 * Default entry point - a backward-compatible superset of the old bundle.
@@ -12,7 +12,7 @@ const require_pure = require("./chunks/pure-f2Yg10QL.js");
 *
 * Import `@sedlak.r/mq/pure` for the same API without the globals.
 */
-if (globalThis.MQ) console.warn("MQ already exists on globalThis, redefining");
+if (globalThis.MQ && globalThis.MQ.Emitter !== require_pure.Emitter) console.warn("MQ already exists on globalThis and was defined by another library; redefining");
 var namespace = {
 	Emitter: require_pure.Emitter,
 	Store: require_pure.Store,
@@ -25,7 +25,7 @@ Object.defineProperty(namespace, "mqDefault", {
 	configurable: true
 });
 globalThis.MQ = namespace;
-if (globalThis.EventEmitter) console.warn(" EventEmitter already exists on globalThis, redefining");
+if (globalThis.EventEmitter && globalThis.EventEmitter !== require_pure.EventEmitter) console.warn("EventEmitter already exists on globalThis and was defined by another library; redefining");
 globalThis.EventEmitter = require_pure.EventEmitter;
 //#endregion
 exports.Emitter = require_pure.Emitter;

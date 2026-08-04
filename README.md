@@ -136,6 +136,31 @@ Both entries share one registry, so an event sent through the imported emitter
 reaches handlers subscribed through the global one. `require()` works too, and
 `dist/mq.min.js` is still the file to drop into a `<script src>` tag.
 
+The two styles mix freely. A library can bundle its own copy and install the
+global, an application can `import { EventEmitter }` from its own copy, and both
+still talk to each other:
+
+```javascript
+import { EventEmitter } from "@sedlak.r/mq";
+
+class Editor {
+	constructor() {
+		this.emitter = EventEmitter.create(this);
+		this.emitter.subscribe("Document.changed", (data) => this.redraw(data));
+	}
+	destroy() {
+		this.emitter.unsubscribe();
+	}
+}
+```
+
+That works because the first copy to load publishes its classes and its single
+emitter under `Symbol.for("@sedlak.r/mq")`, and every later copy adopts them
+instead of building a second `Store`. Without it, duplicate copies each get
+their own bus and events silently fail to cross - no error, just handlers that
+never fire. If the copies are different versions the older one wins, and a
+warning names both so the duplicate can be deduplicated.
+
 #### Example 1
 
 ```javascript

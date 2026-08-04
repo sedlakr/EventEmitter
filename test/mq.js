@@ -716,6 +716,37 @@ describe("MQ - base", function () {
 		});
 	});
 
+	it("a second copy of the package adopts the first one's bus", function () {
+		// A bundler can end up with more than one copy of the library. Each used
+		// to build its own Store, so events sent through one never reached
+		// handlers subscribed through another - silently, with no error.
+		var registry = Object.getOwnPropertySymbols(globalThis).filter(function (s) {
+			return s === Symbol.for("@sedlak.r/mq");
+		});
+
+		expect(registry.length).toBe(1);
+
+		var shared = globalThis[Symbol.for("@sedlak.r/mq")];
+
+		// what a second copy resolves to, by construction
+		expect(shared.EventEmitter).toBe(EventEmitter);
+		expect(shared.Emitter).toBe(MQ.Emitter);
+		expect(shared.Store).toBe(MQ.Store);
+
+		// and it is a working bus, not just object identity
+		var received = 0,
+			producer = shared.EventEmitter.create({}),
+			consumer = EventEmitter.create({}),
+			handler = function () {
+				received++;
+			};
+
+		consumer.subscribe("cross-copy", handler);
+		producer.event("cross-copy");
+		expect(received).toBe(1);
+		consumer.unsubscribe();
+	});
+
 	it("classes report the package version", function () {
 		// Was hardcoded to "1.0" while the package sat at 1.5.0.
 		var expected = EventEmitter.version;

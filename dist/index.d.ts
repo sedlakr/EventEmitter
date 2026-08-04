@@ -8,9 +8,7 @@
  *
  * Import `@sedlak.r/mq/pure` for the same API without the globals.
  */
-import { Emitter } from "./emitter.js";
-import { Store } from "./store.js";
-import { Timer } from "./timer.js";
+import { Emitter, Store, Timer } from "./pure.js";
 export * from "./pure.js";
 /** The shape published as `globalThis.MQ`. */
 export interface MQNamespace {

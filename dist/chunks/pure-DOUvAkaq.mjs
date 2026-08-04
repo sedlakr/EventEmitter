@@ -1,4 +1,4 @@
-/*! @sedlak.r/mq@2.0.0-rc.4 */
+/*! @sedlak.r/mq@2.0.0-rc.5 */
 //#region src/context.ts
 /**
 * The sentinel context meaning "no context was set".
@@ -12,10 +12,10 @@
 * same binding.
 */
 var state = { mqDefault: globalThis };
-function getMqDefault() {
+function getMqDefault$1() {
 	return state.mqDefault;
 }
-function setMqDefault(value) {
+function setMqDefault$1(value) {
 	state.mqDefault = value;
 }
 //#endregion
@@ -25,7 +25,7 @@ function setMqDefault(value) {
 * a dispatch already in flight - `evaluate` iterates a clone - skips handlers
 * that unsubscribed during that same dispatch.
 */
-var StoreRecord = class {
+var StoreRecord$1 = class {
 	context;
 	handler;
 	removed;
@@ -96,7 +96,7 @@ function demand(data, name, params) {
 */
 function removeByName(store, context, name, handler) {
 	const data = event(store, name);
-	if (context === getMqDefault()) {
+	if (context === getMqDefault$1()) {
 		for (const record of data) record.removed = true;
 		store[name] = [];
 	} else for (let i = data.length - 1; i >= 0; i--) {
@@ -111,7 +111,7 @@ function removeByName(store, context, name, handler) {
 * Removes every record belonging to a context, across all event names.
 */
 function removeByContext(store, context) {
-	const isDefault = context === getMqDefault();
+	const isDefault = context === getMqDefault$1();
 	for (const data of Object.values(store)) for (let i = data.length - 1; i >= 0; i--) {
 		const record = data[i];
 		const canRemove = record.context === context || isDefault;
@@ -122,14 +122,14 @@ function removeByContext(store, context) {
 /**
 * Store for emitter.
 */
-var Store = class {
+var Store$1 = class {
 	store;
 	constructor() {
 		this.store = {};
 	}
 	save(context, name, handler) {
 		const normalized = name.toLowerCase();
-		event(this.store, normalized).push(new StoreRecord(context, handler));
+		event(this.store, normalized).push(new StoreRecord$1(context, handler));
 	}
 	remove(context, name, handler) {
 		const normalized = name ? name.toLowerCase() : name;
@@ -161,7 +161,7 @@ var Store = class {
 		return ctxEvent(this.store, ctx, normalized).length;
 	}
 };
-Store.prototype.version = "2.0.0-rc.4";
+Store$1.prototype.version = "2.0.0-rc.5";
 //#endregion
 //#region src/timer.ts
 /**
@@ -171,7 +171,7 @@ Store.prototype.version = "2.0.0-rc.4";
 * default is observable public API - the README documents it and the specs
 * assert on it - so it must not become a microtask.
 */
-var Timer = class {
+var Timer$1 = class {
 	timeout;
 	timer;
 	callback;
@@ -200,7 +200,7 @@ var Timer = class {
 		}
 	}
 };
-Timer.prototype.version = "2.0.0-rc.4";
+Timer$1.prototype.version = "2.0.0-rc.5";
 //#endregion
 //#region src/emitter.ts
 /**
@@ -213,7 +213,7 @@ var notifyQueue = [];
 var debugFilters = [];
 var debugMode = false;
 var simpleMode = false;
-var store = new Store();
+var store = new Store$1();
 /**
 * Binds a DOM listener, routing the two synthetic event types the library
 * supports.
@@ -459,11 +459,11 @@ function destroyHandler(context, data) {
 /**
 * Emitter.
 */
-var Emitter = class Emitter {
+var Emitter$1 = class Emitter$1 {
 	context;
 	isStatic;
 	constructor(isStatic) {
-		this.context = getMqDefault();
+		this.context = getMqDefault$1();
 		this.isStatic = isStatic || false;
 	}
 	/**
@@ -474,7 +474,7 @@ var Emitter = class Emitter {
 	* context, and compared by identity like any other.
 	*/
 	create(context) {
-		return new Emitter().in(context);
+		return new Emitter$1().in(context);
 	}
 	/**
 	* Dispatches synchronously.
@@ -494,7 +494,7 @@ var Emitter = class Emitter {
 			params
 		});
 		if (!timer) {
-			timer = new Timer(30, function() {
+			timer = new Timer$1(30, function() {
 				runQueue();
 				timer.cancel();
 				timer = null;
@@ -516,7 +516,7 @@ var Emitter = class Emitter {
 	*/
 	ctxRequest(name, params) {
 		const ctx = this.context;
-		if (ctx === getMqDefault()) throw new Error("Request with context is available only on instances with custom context. Current context is default. ");
+		if (ctx === getMqDefault$1()) throw new Error("Request with context is available only on instances with custom context. Current context is default. ");
 		const returnValue = store.ctxRequest(ctx, name, params);
 		debugReporter("debug", name, "Context request for '" + name + "' return '" + returnValue + "' for parameters ", params);
 		return returnValue;
@@ -542,7 +542,7 @@ var Emitter = class Emitter {
 	*/
 	ctxWatching(name) {
 		const ctx = this.context;
-		if (ctx === getMqDefault()) throw new Error("Watching with context is available only on instances with custom context. Current context is default. ");
+		if (ctx === getMqDefault$1()) throw new Error("Watching with context is available only on instances with custom context. Current context is default. ");
 		const count = store.ctxWatching(ctx, name);
 		debugReporter("debug", name, "Context watching count status for '" + name + "' return '" + count, []);
 		return count;
@@ -563,7 +563,7 @@ var Emitter = class Emitter {
 	*/
 	unsubscribe(nameOrElement, nameOrHandler, handlerOrUndefined) {
 		const data = normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined);
-		if (this.context === getMqDefault() && !data.name && !data.handler) console.warn("EventEmitter: You are calling unsubscribe method without parameters. This is unbind all event through application!");
+		if (this.context === getMqDefault$1() && !data.name && !data.handler) console.warn("EventEmitter: You are calling unsubscribe method without parameters. This is unbind all event through application!");
 		if (data.element) destroyHandler(this.context, data);
 		else {
 			store.remove(this.context, data.name, data.handler);
@@ -593,17 +593,80 @@ var Emitter = class Emitter {
 		debugFilters = filters || [];
 		debugMode = state;
 		simpleMode = simple;
-		if (state) Emitter.prototype.getStore = function() {
+		if (state) Emitter$1.prototype.getStore = function() {
 			return store;
 		};
-		else Emitter.prototype.getStore = void 0;
+		else Emitter$1.prototype.getStore = void 0;
 		console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 	}
 };
-Emitter.prototype.version = "2.0.0-rc.4";
+Emitter$1.prototype.version = "2.0.0-rc.5";
+//#endregion
+//#region src/shared.ts
+/**
+* Rendezvous point so that duplicate copies of this package share one bus.
+*
+* A bundler can easily end up with more than one copy - a library bundling it
+* plus the host app importing it, two versions in a dependency tree, an ESM and
+* a CommonJS build loaded side by side. Each copy would otherwise build its own
+* `Store`, and events sent through one would never reach handlers subscribed
+* through another. Nothing throws; the bus just silently splits in two.
+*
+* The first copy to load publishes its classes and singleton here; every later
+* copy adopts them and leaves its own inert. `Symbol.for` is used so the lookup
+* works across copies without relying on a string property that application
+* code might also touch.
+*/
+var REGISTRY = Symbol.for("@sedlak.r/mq");
+/**
+* Returns the already-published runtime, or publishes and returns this copy's.
+*
+* The factory is only called when this copy is first, so a later copy never
+* pays to construct a `Store` it will not use.
+*/
+function adoptOrPublish(version, create) {
+	const host = globalThis;
+	const existing = host[REGISTRY];
+	if (existing) {
+		if (existing.version !== version) console.warn(`EventEmitter: using @sedlak.r/mq ${existing.version}, which loaded first, but this copy is ${version}. Both are present in the bundle; they now share one event bus, and the older API is the one in effect. Deduplicate the dependency to remove this warning.`);
+		return existing;
+	}
+	const runtime = create();
+	host[REGISTRY] = runtime;
+	return runtime;
+}
 //#endregion
 //#region src/pure.ts
+/**
+* Entry point that does not define the `MQ` / `EventEmitter` globals.
+*
+* It does still use the `Symbol.for` registry in `./shared.js`, because that is
+* the only way duplicate copies of the package can find each other and share a
+* single event bus. Nothing readable by application code is added to
+* `globalThis`; import `@sedlak.r/mq` instead if you want the two globals.
+*/
+var runtime = adoptOrPublish("2.0.0-rc.5", () => ({
+	version: "2.0.0-rc.5",
+	Emitter: Emitter$1,
+	Store: Store$1,
+	StoreRecord: StoreRecord$1,
+	Timer: Timer$1,
+	getMqDefault: getMqDefault$1,
+	setMqDefault: setMqDefault$1,
+	EventEmitter: new Emitter$1(true)
+}));
+/**
+* These resolve to whichever copy of the package loaded first, so two copies in
+* one bundle still dispatch to each other. When this copy is the only one - the
+* normal case - they are exactly its own.
+*/
+var Emitter = runtime.Emitter;
+var Store = runtime.Store;
+var StoreRecord = runtime.StoreRecord;
+var Timer = runtime.Timer;
 /** The shared, context-less emitter. Cannot be rebound with `in()`. */
-var EventEmitter = new Emitter(true);
+var EventEmitter = runtime.EventEmitter;
+var getMqDefault = runtime.getMqDefault;
+var setMqDefault = runtime.setMqDefault;
 //#endregion
-export { StoreRecord as a, Store as i, Emitter as n, getMqDefault as o, Timer as r, setMqDefault as s, EventEmitter as t };
+export { Timer as a, StoreRecord as i, EventEmitter as n, getMqDefault as o, Store as r, setMqDefault as s, Emitter as t };

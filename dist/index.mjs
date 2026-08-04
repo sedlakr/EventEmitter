@@ -1,5 +1,5 @@
-/*! @sedlak.r/mq@2.0.0-rc.4 */
-import { a as StoreRecord, i as Store, n as Emitter, o as getMqDefault, r as Timer, s as setMqDefault, t as EventEmitter } from "./chunks/pure-nSt1URWh.mjs";
+/*! @sedlak.r/mq@2.0.0-rc.5 */
+import { a as Timer, i as StoreRecord, n as EventEmitter, o as getMqDefault, r as Store, s as setMqDefault, t as Emitter } from "./chunks/pure-DOUvAkaq.mjs";
 //#region src/index.ts
 /**
 * Default entry point - a backward-compatible superset of the old bundle.
@@ -11,7 +11,7 @@ import { a as StoreRecord, i as Store, n as Emitter, o as getMqDefault, r as Tim
 *
 * Import `@sedlak.r/mq/pure` for the same API without the globals.
 */
-if (globalThis.MQ) console.warn("MQ already exists on globalThis, redefining");
+if (globalThis.MQ && globalThis.MQ.Emitter !== Emitter) console.warn("MQ already exists on globalThis and was defined by another library; redefining");
 var namespace = {
 	Emitter,
 	Store,
@@ -24,7 +24,7 @@ Object.defineProperty(namespace, "mqDefault", {
 	configurable: true
 });
 globalThis.MQ = namespace;
-if (globalThis.EventEmitter) console.warn(" EventEmitter already exists on globalThis, redefining");
+if (globalThis.EventEmitter && globalThis.EventEmitter !== EventEmitter) console.warn("EventEmitter already exists on globalThis and was defined by another library; redefining");
 globalThis.EventEmitter = EventEmitter;
 //#endregion
 export { Emitter, EventEmitter, Store, StoreRecord, Timer, getMqDefault, setMqDefault };

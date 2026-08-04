@@ -8,11 +8,10 @@
  *
  * Import `@sedlak.r/mq/pure` for the same API without the globals.
  */
-import { Emitter } from "./emitter.js";
-import { Store } from "./store.js";
-import { Timer } from "./timer.js";
-import { getMqDefault, setMqDefault } from "./context.js";
-import { EventEmitter } from "./pure.js";
+// Everything comes from ./pure.js rather than the implementation modules, so
+// the globals installed here are the same objects a duplicate copy of the
+// package would adopt - one bus, however many copies end up in the bundle.
+import { Emitter, Store, Timer, EventEmitter, getMqDefault, setMqDefault } from "./pure.js";
 
 export * from "./pure.js";
 
@@ -58,8 +57,11 @@ declare global {
 	}
 }
 
-if (globalThis.MQ) {
-	console.warn("MQ already exists on globalThis, redefining");
+// A second copy of the package installing the same shared objects is not a
+// conflict - it is the registry doing its job. Only warn when the globals were
+// put there by something else, which does overwrite a foreign bus.
+if (globalThis.MQ && globalThis.MQ.Emitter !== Emitter) {
+	console.warn("MQ already exists on globalThis and was defined by another library; redefining");
 }
 
 const namespace = { Emitter, Store, Timer } as MQNamespace;
@@ -75,7 +77,7 @@ Object.defineProperty(namespace, "mqDefault", {
 
 globalThis.MQ = namespace;
 
-if (globalThis.EventEmitter) {
-	console.warn(" EventEmitter already exists on globalThis, redefining");
+if (globalThis.EventEmitter && globalThis.EventEmitter !== EventEmitter) {
+	console.warn("EventEmitter already exists on globalThis and was defined by another library; redefining");
 }
 globalThis.EventEmitter = EventEmitter;

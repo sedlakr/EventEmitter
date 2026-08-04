@@ -1,5 +1,32 @@
 ## Unreleased
 
+## 2.0.0-rc.5
+
+### Fixed
+
+- Duplicate copies of the package now share one event bus. A bundler can easily
+  produce more than one copy - a library bundling it plus the host app importing
+  it, or an ESM and a classic-script build side by side - and each copy used to
+  build its own `Store`. Events sent through one never reached handlers
+  subscribed through another, silently and with no error, and whichever copy
+  loaded last overwrote `globalThis.MQ` and `globalThis.EventEmitter`.
+
+    The first copy to load now publishes its classes and its single emitter under
+    `Symbol.for("@sedlak.r/mq")`; later copies adopt those and leave their own
+    inert. `import { EventEmitter } from "@sedlak.r/mq"`, `import "@sedlak.r/mq"`,
+    `@sedlak.r/mq/pure` and the `<script src>` bundle all resolve to the same
+    emitter, in any combination.
+
+    The "already exists on globalThis, redefining" warnings no longer fire for a
+    second copy of this package, since that is now the registry working as
+    intended. They still fire when something else defined those globals. A
+    version mismatch between copies warns once and names both versions.
+
+### Changed
+
+- `@sedlak.r/mq/pure` still defines no readable global, but does use the
+  `Symbol.for` registry - that is the only way copies can find each other.
+
 ## 2.0.0-rc.4
 
 ### Fixed
