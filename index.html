@@ -4,8 +4,8 @@
 		<meta charset="UTF-8" />
 		<title>EventEmitter dev playground</title>
 
-		<!-- The entry pulls in the five sources in load order; `npm run dev` serves this. -->
-		<script type="module" src="/src/index.js"></script>
+		<!-- `pnpm run dev` serves this; the entry installs the globals. -->
+		<script type="module" src="/src/index.ts"></script>
 	</head>
 	<body>
 		<p>Open the console: <code>EventEmitter</code> and <code>MQ</code> are on the global scope.</p>

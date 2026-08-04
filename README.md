@@ -9,34 +9,45 @@ simple to use it.
 ### How to install
 
 Install [Node.js](https://nodejs.org/en/) 22 or 24 (LTS lines - jsdom, used by the
-test suite, does not support odd-numbered releases), then:
+test suite, does not support odd-numbered releases). The package manager is pnpm,
+pinned by the `packageManager` field, so let Corepack provide it rather than
+installing pnpm yourself:
 
 ```bash
-npm install
+corepack enable
+pnpm install
 ```
 
 ### Scripts
 
-| Command                 | What it does                                           |
-| ----------------------- | ------------------------------------------------------ |
-| `npm run dev`           | Serves `index.html` with the sources loaded as modules |
-| `npm test`              | Runs the spec suite (Vitest + jsdom)                   |
-| `npm run test:watch`    | Same, in watch mode                                    |
-| `npm run test:coverage` | Spec suite with a V8 coverage report                   |
-| `npm run bench`         | Benchmarks `MQ.Store` removal cost                     |
-| `npm run lint`          | ESLint                                                 |
-| `npm run format`        | Prettier, in place                                     |
-| `npm run build`         | Writes `dist/mq.js` and `dist/mq.min.js`               |
+| Command                  | What it does                                           |
+| ------------------------ | ------------------------------------------------------ |
+| `pnpm run dev`           | Serves `index.html` with the sources loaded as modules |
+| `pnpm test`              | Runs the spec suite (Vitest + jsdom)                   |
+| `pnpm run test:watch`    | Same, in watch mode                                    |
+| `pnpm run test:coverage` | Spec suite with a V8 coverage report                   |
+| `pnpm run bench`         | Benchmarks `MQ.Store` removal cost                     |
+| `pnpm run lint`          | ESLint                                                 |
+| `pnpm run format`        | Prettier, in place                                     |
+| `pnpm run build`         | Writes `dist/mq.js` and `dist/mq.min.js`               |
 
 ### How to release
 
-- `npm install`
+- `pnpm install`
 - commit changes
 - bump the version in `package.json` and add a `CHANGELOG.md` entry
-- `npm run build`
-- `npm publish` in the root directory
+- `pnpm run build`
+- `pnpm publish` in the root directory
 
 `prepublishOnly` re-runs lint, tests and the build, so a broken tree cannot be published.
+
+Unlike `npm publish`, `pnpm publish` refuses to run with uncommitted changes or
+from a branch other than the publish branch. Releasing a prerelease from a
+working branch therefore needs the checks turned off explicitly:
+
+```bash
+pnpm publish --tag rc --no-git-checks
+```
 
 ### Methods
 
