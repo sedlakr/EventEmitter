@@ -1,5 +1,36 @@
 ## Unreleased
 
+## 2.0.0-rc.4
+
+### Fixed
+
+- `subscribe()` on a DOM element no longer throws `TypeError: Invalid value used
+as weak map key` when the emitter's context is not an object. `create()` may be
+  called with no argument at all, giving a context of `undefined`, and callers
+  also pass strings; neither can key the WeakMap that rc.3 introduced to index
+  element bindings. Object contexts are still held weakly, so dropping one still
+  releases its listeners; other contexts use an ordinary Map.
+
+    This was a regression in rc.3, introduced by the fix for `unsubscribe()`
+    leaking DOM listeners.
+
+### Breaking
+
+- `unsubscribe(name)` with only an event name now removes that event's handlers
+  for the emitter's context. It previously fell into the no-argument shape and
+  routed through `removeByContext`, dropping **every** subscription the context
+  had - and on the default context, every subscription in the application,
+  whichever context registered it. A caller asking to detach one event silently
+  lost all of them; only a default-context caller got the "unbind all" warning,
+  and a custom-context caller got no signal at all.
+
+    Anyone relying on `unsubscribe(name)` to tear down a whole context should call
+    `unsubscribe()` with no arguments, which has always meant exactly that.
+
+    Removal on the default context still ignores both the context and the handler
+    and drops every handler under that name. That is unchanged, and now documented
+    in the README rather than left to be discovered.
+
 ## 2.0.0-rc.3
 
 > Contains behaviour changes. `demand()` now throws an `Error` where it used to

@@ -533,9 +533,13 @@ describe("MQ - base", function () {
 
 		handlerRemove = function () {
 			if (remove) {
-				// Both arguments matter: unsubscribe(name) alone is treated as
-				// unsubscribe-everything and routes through removeByContext,
-				// which was never the buggy path.
+				// Passing the handler keeps this spec pointed at removeByName,
+				// which is the path that failed to mark records as removed. When
+				// this spec was written unsubscribe(name) alone did not reach
+				// removeByName at all - it was read as unsubscribe-everything and
+				// routed through removeByContext, so the spec passed against the
+				// broken code without ever exercising it. That shape now works,
+				// but naming the handler still says which path is under test.
 				EventEmitter.unsubscribe("DEFAULTCOUNTER", handlerCounter);
 			}
 		};
@@ -614,6 +618,102 @@ describe("MQ - base", function () {
 		simulateClick(dom, "click", dom);
 		expect(droppedCount).toBe(1);
 		expect(keptCount).toBe(2);
+	});
+
+	it("unsubscribe(name) removes only that event, not the whole context", function () {
+		// unsubscribe(name) used to fall into the no-argument shape, so it routed
+		// through removeByContext and dropped every subscription the context had.
+		var handler,
+			context = {},
+			emitter = EventEmitter.create(context);
+
+		handler = function () {};
+
+		// two handlers on the event being dropped: passing no handler means "any
+		// handler in this context", so both have to go
+		emitter.subscribe("nameonly-gone", handler);
+		emitter.subscribe("nameonly-gone", function () {});
+		emitter.subscribe("nameonly-kept", handler);
+
+		expect(emitter.watching("nameonly-gone")).toBe(2);
+		expect(emitter.watching("nameonly-kept")).toBe(1);
+
+		emitter.unsubscribe("nameonly-gone");
+
+		expect(emitter.watching("nameonly-gone")).toBe(0);
+		// the survivor: removeByContext used to take this one down too
+		expect(emitter.watching("nameonly-kept")).toBe(1);
+
+		emitter.unsubscribe();
+	});
+
+	it("unsubscribe(name) on the default context spares other contexts' events", function () {
+		// The worst case of the old behaviour: a default-context unsubscribe(name)
+		// reached removeByContext, whose `isDefault` branch removes every record
+		// regardless of context - so one caller asking to drop one event took out
+		// unrelated subscriptions across the whole application.
+		var handler,
+			other = EventEmitter.create({});
+
+		handler = function () {};
+
+		EventEmitter.subscribe("nameonly-default", handler);
+		other.subscribe("nameonly-bystander", handler);
+
+		expect(EventEmitter.watching("nameonly-default")).toBe(1);
+		expect(EventEmitter.watching("nameonly-bystander")).toBe(1);
+
+		EventEmitter.unsubscribe("nameonly-default");
+
+		expect(EventEmitter.watching("nameonly-default")).toBe(0);
+		// the bystander belongs to another context and another event entirely
+		expect(EventEmitter.watching("nameonly-bystander")).toBe(1);
+
+		other.unsubscribe();
+	});
+
+	it("unsubscribe(name) does not warn about unbinding everything", function () {
+		// The warning is the only signal a default-context caller got, and it is
+		// now wrong: nothing application-wide is being unbound.
+		// restoreMocks is on, so the spy is undone between specs.
+		var warn = vi.spyOn(console, "warn").mockImplementation(function () {});
+
+		EventEmitter.subscribe("nameonly-warn", function () {});
+		EventEmitter.unsubscribe("nameonly-warn");
+
+		expect(warn).not.toHaveBeenCalled();
+
+		// still fires for the shape that really does unbind everything
+		EventEmitter.unsubscribe();
+
+		expect(warn).toHaveBeenCalled();
+	});
+
+	it("binds dom events when the context is not an object", function () {
+		// create() with no argument gives a context of `undefined`, and callers
+		// also pass strings. Neither can be a WeakMap key, so indexing element
+		// bindings by context has to tolerate them.
+		var dom = document.createElement("div"),
+			counter = 0,
+			handler = function () {
+				counter++;
+			};
+
+		[EventEmitter.create(), EventEmitter.create("a-string-context")].forEach(function (emitter) {
+			counter = 0;
+
+			expect(function () {
+				emitter.subscribe(dom, "click", handler);
+			}).not.toThrow();
+
+			simulateClick(dom, "click", dom);
+			expect(counter).toBe(1);
+
+			emitter.unsubscribe();
+
+			simulateClick(dom, "click", dom);
+			expect(counter).toBe(1);
+		});
 	});
 
 	it("classes report the package version", function () {

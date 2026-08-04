@@ -1,4 +1,4 @@
-/*! @sedlak.r/mq@2.0.0-rc.3 */
+/*! @sedlak.r/mq@2.0.0-rc.4 */
 (function() {
 	//#region src/context.ts
 	/**
@@ -162,7 +162,7 @@
 			return ctxEvent(this.store, ctx, normalized).length;
 		}
 	};
-	Store.prototype.version = "2.0.0-rc.3";
+	Store.prototype.version = "2.0.0-rc.4";
 	//#endregion
 	//#region src/timer.ts
 	/**
@@ -201,7 +201,7 @@
 			}
 		}
 	};
-	Timer.prototype.version = "2.0.0-rc.3";
+	Timer.prototype.version = "2.0.0-rc.4";
 	//#endregion
 	//#region src/emitter.ts
 	/**
@@ -313,10 +313,19 @@
 		throw new Error("EventEmitter: Incorrect parameters given into function subscribe() or unsubscribe().");
 	}
 	/**
-	* Same shapes as above, plus the no-argument form meaning "everything for this
-	* context".
+	* Same shapes as above, plus the name-only and no-argument forms.
+	*
+	* The name-only branch has to come first. It used to fall into the catch-all
+	* below, so `unsubscribe(name)` was silently read as `unsubscribe()` and dropped
+	* every subscription for the context - on the default context, every
+	* subscription in the application.
 	*/
 	function normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handler) {
+		if (typeof nameOrElement === "string" && nameOrHandler === void 0) return {
+			element: null,
+			name: nameOrElement,
+			handler: null
+		};
 		if (nameOrElement === void 0 || nameOrHandler === void 0) return {
 			element: null,
 			name: null,
@@ -356,10 +365,29 @@
 	* and the per-subscriber `handlers` list cannot answer "everything for this
 	* context" - it is reachable only from a handler the caller still holds.
 	*
-	* Keyed weakly so a context that is dropped without being unsubscribed takes
-	* its binding list with it rather than pinning elements in this module.
+	* Object contexts are held weakly, so one dropped without being unsubscribed
+	* takes its binding list with it rather than pinning elements in this module.
+	* A context is not necessarily an object though: `create()` may be called with
+	* no argument at all, and callers pass strings. Those cannot be WeakMap keys,
+	* so they get an ordinary Map.
 	*/
-	var bindingsByContext = /* @__PURE__ */ new WeakMap();
+	var weakBindings = /* @__PURE__ */ new WeakMap();
+	var keyedBindings = /* @__PURE__ */ new Map();
+	/** Whether a context can be used as a WeakMap key. */
+	function isWeakKeyable(context) {
+		return typeof context === "object" && context !== null || typeof context === "function";
+	}
+	function getBindings(context) {
+		return isWeakKeyable(context) ? weakBindings.get(context) : keyedBindings.get(context);
+	}
+	function setBindings(context, bindings) {
+		if (isWeakKeyable(context)) weakBindings.set(context, bindings);
+		else keyedBindings.set(context, bindings);
+	}
+	function deleteBindings(context) {
+		if (isWeakKeyable(context)) weakBindings.delete(context);
+		else keyedBindings.delete(context);
+	}
 	/**
 	* Wraps a subscriber so the DOM hands it `[event, ...params]` bound to the
 	* emitter's context, and records it on the handler for later removal.
@@ -374,21 +402,21 @@
 		handler.type = data.name;
 		handler.context = context;
 		handlers.push(handler);
-		const bindings = bindingsByContext.get(context) || [];
+		const bindings = getBindings(context) || [];
 		bindings.push({
 			element: data.element,
 			type: data.name,
 			subscriber: data.handler,
 			bound: handler
 		});
-		bindingsByContext.set(context, bindings);
+		setBindings(context, bindings);
 		return handler;
 	}
 	/**
 	* Drops one binding from the context index, once its listener is gone.
 	*/
 	function forgetBinding(context, bound) {
-		const bindings = bindingsByContext.get(context);
+		const bindings = getBindings(context);
 		if (!bindings) return;
 		const index = bindings.findIndex((binding) => binding.bound === bound);
 		if (index >= 0) bindings.splice(index, 1);
@@ -400,7 +428,7 @@
 	* subscriptions, which the README has always claimed it does.
 	*/
 	function destroyHandlersByContext(context) {
-		const bindings = bindingsByContext.get(context);
+		const bindings = getBindings(context);
 		if (!bindings) return;
 		for (const binding of bindings.slice(0)) {
 			removeEvent(binding.element, binding.type, binding.bound);
@@ -410,7 +438,7 @@
 				if (index >= 0) handlers.splice(index, 1);
 			}
 		}
-		bindingsByContext.delete(context);
+		deleteBindings(context);
 	}
 	/**
 	* Removes the bound handlers matching element + type + context.
@@ -441,6 +469,10 @@
 		}
 		/**
 		* Creates a new emitter bound to `context`, sharing the same registry.
+		*
+		* `context` is optional: callers do use `create()` with no argument, which
+		* yields an emitter whose context is `undefined` - distinct from the default
+		* context, and compared by identity like any other.
 		*/
 		create(context) {
 			return new Emitter().in(context);
@@ -527,7 +559,8 @@
 			return this;
 		}
 		/**
-		* Stops listening. With no arguments, drops everything for this context.
+		* Stops listening. Given only an event name, drops that event's handlers for
+		* this context. With no arguments, drops everything for this context.
 		*/
 		unsubscribe(nameOrElement, nameOrHandler, handlerOrUndefined) {
 			const data = normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined);
@@ -568,7 +601,7 @@
 			console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 		}
 	};
-	Emitter.prototype.version = "2.0.0-rc.3";
+	Emitter.prototype.version = "2.0.0-rc.4";
 	//#endregion
 	//#region src/pure.ts
 	/** The shared, context-less emitter. Cannot be rebound with `in()`. */

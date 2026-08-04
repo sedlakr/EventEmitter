@@ -35,8 +35,12 @@ export declare class Emitter {
     constructor(isStatic?: boolean);
     /**
      * Creates a new emitter bound to `context`, sharing the same registry.
+     *
+     * `context` is optional: callers do use `create()` with no argument, which
+     * yields an emitter whose context is `undefined` - distinct from the default
+     * context, and compared by identity like any other.
      */
-    create(context: Context): Emitter;
+    create(context?: Context): Emitter;
     /**
      * Dispatches synchronously.
      */
@@ -70,7 +74,8 @@ export declare class Emitter {
      */
     subscribe(nameOrElement: EventTarget | string, nameOrHandler: string | DecoratedHandler, handlerOrUndefined?: DecoratedHandler, paramsOrUndefined?: unknown[], eventOptions?: boolean | AddEventListenerOptions): this;
     /**
-     * Stops listening. With no arguments, drops everything for this context.
+     * Stops listening. Given only an event name, drops that event's handlers for
+     * this context. With no arguments, drops everything for this context.
      */
     unsubscribe(nameOrElement?: EventTarget | string, nameOrHandler?: string | DecoratedHandler, handlerOrUndefined?: DecoratedHandler): this;
     /**

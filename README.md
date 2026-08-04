@@ -88,9 +88,16 @@ Called with no arguments it drops everything registered by that emitter's
 context - both named events and DOM element bindings. Bindings made by other
 contexts on the same element are left alone.
 
-Note that `unsubscribe(name)` with only an event name is **not** remove-by-name:
-it is treated as the no-argument form and drops everything for the context. Pass
-the handler too - `unsubscribe(name, handler)` - to remove a single subscription.
+Called with only an event name it drops that event's handlers for the context.
+Pass the handler too - `unsubscribe(name, handler)` - to remove one specific
+subscription rather than every handler the context has for that event.
+
+Note that on the **default** context - the global `EventEmitter`, or an emitter
+that was never given a context - remove-by-name ignores both the context and the
+handler and drops every handler registered under that name, whichever context
+registered it. This is long-standing behaviour of the default context, not
+specific to the name-only form. Use `EventEmitter.create(context)` when you need
+removal scoped to your own subscriptions.
 
 #### .interrupt(event, stopProp, cancelDef)
 

@@ -221,8 +221,12 @@ function normalizeSubscribeParams(
 }
 
 /**
- * Same shapes as above, plus the no-argument form meaning "everything for this
- * context".
+ * Same shapes as above, plus the name-only and no-argument forms.
+ *
+ * The name-only branch has to come first. It used to fall into the catch-all
+ * below, so `unsubscribe(name)` was silently read as `unsubscribe()` and dropped
+ * every subscription for the context - on the default context, every
+ * subscription in the application.
  */
 function normalizeUnsubscribeParams(
 	nameOrElement?: EventTarget | string,
@@ -230,6 +234,17 @@ function normalizeUnsubscribeParams(
 	handler?: DecoratedHandler,
 ): UnsubscribeParams | null {
 	//type 1
+	if (typeof nameOrElement === "string" && nameOrHandler === undefined) {
+		//`Store.remove` reads a null handler as "any handler in this context",
+		//which is what a caller passing only a name is asking for.
+		return {
+			element: null,
+			name: nameOrElement,
+			handler: null,
+		};
+	}
+
+	//type 2
 	if (nameOrElement === undefined || nameOrHandler === undefined) {
 		return {
 			element: null,
@@ -238,7 +253,7 @@ function normalizeUnsubscribeParams(
 		};
 	}
 
-	//type 2
+	//type 3
 	if (typeof nameOrElement === "string" && typeof nameOrHandler === "function") {
 		return {
 			element: null,
@@ -247,7 +262,7 @@ function normalizeUnsubscribeParams(
 		};
 	}
 
-	//type 3
+	//type 4
 	const target = nameOrElement as Node;
 	const isElement = target.nodeType && target.nodeType === 1;
 	const isDocument = target === (document as unknown as Node);
@@ -300,10 +315,39 @@ function runQueue(): void {
  * and the per-subscriber `handlers` list cannot answer "everything for this
  * context" - it is reachable only from a handler the caller still holds.
  *
- * Keyed weakly so a context that is dropped without being unsubscribed takes
- * its binding list with it rather than pinning elements in this module.
+ * Object contexts are held weakly, so one dropped without being unsubscribed
+ * takes its binding list with it rather than pinning elements in this module.
+ * A context is not necessarily an object though: `create()` may be called with
+ * no argument at all, and callers pass strings. Those cannot be WeakMap keys,
+ * so they get an ordinary Map.
  */
-const bindingsByContext = new WeakMap<Context, ElementBinding[]>();
+const weakBindings = new WeakMap<object, ElementBinding[]>();
+const keyedBindings = new Map<unknown, ElementBinding[]>();
+
+/** Whether a context can be used as a WeakMap key. */
+function isWeakKeyable(context: Context | undefined): context is object {
+	return (typeof context === "object" && context !== null) || typeof context === "function";
+}
+
+function getBindings(context: Context): ElementBinding[] | undefined {
+	return isWeakKeyable(context) ? weakBindings.get(context) : keyedBindings.get(context);
+}
+
+function setBindings(context: Context, bindings: ElementBinding[]): void {
+	if (isWeakKeyable(context)) {
+		weakBindings.set(context, bindings);
+	} else {
+		keyedBindings.set(context, bindings);
+	}
+}
+
+function deleteBindings(context: Context): void {
+	if (isWeakKeyable(context)) {
+		weakBindings.delete(context);
+	} else {
+		keyedBindings.delete(context);
+	}
+}
 
 interface ElementBinding {
 	element: EventTarget;
@@ -335,7 +379,7 @@ function createHandler(context: Context, data: SubscribeParams): DecoratedHandle
 	handlers.push(handler);
 
 	//index by context so a no-argument unsubscribe can find it
-	const bindings = bindingsByContext.get(context) || [];
+	const bindings = getBindings(context) || [];
 
 	bindings.push({
 		element: data.element as EventTarget,
@@ -343,7 +387,7 @@ function createHandler(context: Context, data: SubscribeParams): DecoratedHandle
 		subscriber: data.handler,
 		bound: handler,
 	});
-	bindingsByContext.set(context, bindings);
+	setBindings(context, bindings);
 
 	return handler;
 }
@@ -352,7 +396,7 @@ function createHandler(context: Context, data: SubscribeParams): DecoratedHandle
  * Drops one binding from the context index, once its listener is gone.
  */
 function forgetBinding(context: Context, bound: DecoratedHandler): void {
-	const bindings = bindingsByContext.get(context);
+	const bindings = getBindings(context);
 
 	if (!bindings) {
 		return;
@@ -372,7 +416,7 @@ function forgetBinding(context: Context, bound: DecoratedHandler): void {
  * subscriptions, which the README has always claimed it does.
  */
 function destroyHandlersByContext(context: Context): void {
-	const bindings = bindingsByContext.get(context);
+	const bindings = getBindings(context);
 
 	if (!bindings) {
 		return;
@@ -393,7 +437,7 @@ function destroyHandlersByContext(context: Context): void {
 		}
 	}
 
-	bindingsByContext.delete(context);
+	deleteBindings(context);
 }
 
 /**
@@ -447,9 +491,13 @@ export class Emitter {
 
 	/**
 	 * Creates a new emitter bound to `context`, sharing the same registry.
+	 *
+	 * `context` is optional: callers do use `create()` with no argument, which
+	 * yields an emitter whose context is `undefined` - distinct from the default
+	 * context, and compared by identity like any other.
 	 */
-	create(context: Context): Emitter {
-		return new Emitter().in(context);
+	create(context?: Context): Emitter {
+		return new Emitter().in(context as Context);
 	}
 
 	/**
@@ -600,7 +648,8 @@ export class Emitter {
 	}
 
 	/**
-	 * Stops listening. With no arguments, drops everything for this context.
+	 * Stops listening. Given only an event name, drops that event's handlers for
+	 * this context. With no arguments, drops everything for this context.
 	 */
 	unsubscribe(
 		nameOrElement?: EventTarget | string,
