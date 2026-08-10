@@ -1,28 +1,53 @@
 # EventEmitter
 
 ### Info
+
 Message queue for events. Is used for sending events, requests, notify information and
 binding events on dom elements. It is a minimalistic library (< 8kB min file) and is really
 simple to use it.
 
 ### How to install
 
-Download and install [NodeJs](https://nodejs.org/en/)
+Install [Node.js](https://nodejs.org/en/) 22 or 24 (LTS lines - jsdom, used by the
+test suite, does not support odd-numbered releases). The package manager is pnpm,
+pinned by the `packageManager` field, so let Corepack provide it rather than
+installing pnpm yourself:
 
-Run command `npm install --force`
+```bash
+corepack enable
+pnpm install
+```
+
+### Scripts
+
+| Command                  | What it does                                           |
+| ------------------------ | ------------------------------------------------------ |
+| `pnpm run dev`           | Serves `index.html` with the sources loaded as modules |
+| `pnpm test`              | Runs the spec suite (Vitest + jsdom)                   |
+| `pnpm run test:watch`    | Same, in watch mode                                    |
+| `pnpm run test:coverage` | Spec suite with a V8 coverage report                   |
+| `pnpm run bench`         | Benchmarks `MQ.Store` removal cost                     |
+| `pnpm run lint`          | ESLint                                                 |
+| `pnpm run format`        | Prettier, in place                                     |
+| `pnpm run build`         | Writes `dist/mq.js` and `dist/mq.min.js`               |
 
 ### How to release
 
-- install
+- `pnpm install`
 - commit changes
-- bump version in package json
-- run grunt default task
-- run npm publish in root directory
+- bump the version in `package.json` and add a `CHANGELOG.md` entry
+- `pnpm run build`
+- `pnpm publish` in the root directory
 
-### Test status on CodeShip
-![CodeShip status](https://codeship.com/projects/3e312a00-5f7a-0133-10a2-5684d7134b37/status?branch=master "CodeShip status")
+`prepublishOnly` re-runs lint, tests and the build, so a broken tree cannot be published.
 
-[CodeShip Continuous integration project](https://codeship.com/projects/111793)
+Unlike `npm publish`, `pnpm publish` refuses to run with uncommitted changes or
+from a branch other than the publish branch. Releasing a prerelease from a
+working branch therefore needs the checks turned off explicitly:
+
+```bash
+pnpm publish --tag rc --no-git-checks
+```
 
 ### Methods
 
@@ -70,6 +95,21 @@ You can use it for your custom events or bind it to dom element. More informatio
 This method is used for stop listening for events, that are triggered by `.event()`, `.notify()` or `.request()`.
 More information in section "How to use it"
 
+Called with no arguments it drops everything registered by that emitter's
+context - both named events and DOM element bindings. Bindings made by other
+contexts on the same element are left alone.
+
+Called with only an event name it drops that event's handlers for the context.
+Pass the handler too - `unsubscribe(name, handler)` - to remove one specific
+subscription rather than every handler the context has for that event.
+
+Note that on the **default** context - the global `EventEmitter`, or an emitter
+that was never given a context - remove-by-name ignores both the context and the
+handler and drops every handler registered under that name, whichever context
+registered it. This is long-standing behaviour of the default context, not
+specific to the name-only form. Use `EventEmitter.create(context)` when you need
+removal scoped to your own subscriptions.
+
 #### .interrupt(event, stopProp, cancelDef)
 
 This function is used to stop browser event. There are parameters for stop propagation
@@ -87,17 +127,56 @@ Same as `.watching` above, but looks up for event with same context as callee
 #### .debugMode(state, filters)
 
 You can turn on debug mode and filter some specific events. Other events will be writen into
- browser console with all parameters.
+browser console with all parameters.
 
 ### How to use it
 
 You can use this library in global way. There is global variable `EventEmitter`.
 
+Since 1.6 the same API is also importable, and the package ships its own types:
+
+```javascript
+// installs globalThis.MQ and globalThis.EventEmitter, and exports them
+import { EventEmitter, Emitter, Store, Timer } from "@sedlak.r/mq";
+
+// identical API, but nothing is written to globalThis
+import { EventEmitter } from "@sedlak.r/mq/pure";
+```
+
+Both entries share one registry, so an event sent through the imported emitter
+reaches handlers subscribed through the global one. `require()` works too, and
+`dist/mq.min.js` is still the file to drop into a `<script src>` tag.
+
+The two styles mix freely. A library can bundle its own copy and install the
+global, an application can `import { EventEmitter }` from its own copy, and both
+still talk to each other:
+
+```javascript
+import { EventEmitter } from "@sedlak.r/mq";
+
+class Editor {
+	constructor() {
+		this.emitter = EventEmitter.create(this);
+		this.emitter.subscribe("Document.changed", (data) => this.redraw(data));
+	}
+	destroy() {
+		this.emitter.unsubscribe();
+	}
+}
+```
+
+That works because the first copy to load publishes its classes and its single
+emitter under `Symbol.for("@sedlak.r/mq")`, and every later copy adopts them
+instead of building a second `Store`. Without it, duplicate copies each get
+their own bus and events silently fail to cross - no error, just handlers that
+never fire. If the copies are different versions the older one wins, and a
+warning names both so the duplicate can be deduplicated.
+
 #### Example 1
 
 ```javascript
 EventEmitter.subscribe("MyEvent", function (data) {
-    console.log("You handler for event");
+	console.log("You handler for event");
 });
 EventEmitter.event("MyEvent");
 EventEmitter.event("MyEvent", [true, "param2"]);
@@ -111,7 +190,7 @@ you don't have context, so in handler is invalid pointer on `this`. We can make 
 
 ```javascript
 var handler = function (data) {
-  console.log("You handler for event");
+	console.log("You handler for event");
 };
 EventEmitter.subscribe("MyEvent", handler);
 EventEmitter.event("MyEvent");
@@ -125,10 +204,10 @@ So now we can unsubscribe our event. Now we must solve the second problem. Conte
 
 ```javascript
 var emitter,
-    context = {},
-    handler = function (data) {
-  console.log("You handler for event with context from 'context' variable.");
-};
+	context = {},
+	handler = function (data) {
+		console.log("You handler for event with context from 'context' variable.");
+	};
 emitter = EventEmitter.create(context);
 emitter.subscribe("MyEvent", handler);
 emitter.event("MyEvent");
@@ -144,10 +223,10 @@ will be destroyed. So we can update last example for complete clean all events.
 
 ```javascript
 var emitter,
-    context = {},
-    handler = function (data) {
-  console.log("You handler for event wit context from 'context' variable.");
-};
+	context = {},
+	handler = function (data) {
+		console.log("You handler for event wit context from 'context' variable.");
+	};
 emitter = EventEmitter.create(context);
 emitter.subscribe("MyEvent", handler);
 emitter.subscribe("MyEventSecond", handler);
@@ -158,20 +237,23 @@ emitter.unsubscribe();
 
 And last part is binding to DOM elements. It's easy like others thing before.
 
-
 #### Example 3
 
 ```javascript
 var emitter,
-    context = {},
-    handler = function (data) {
-  console.log("Clicked on body and destroy.");
-  emitter.unsubscribe();
-  //emitter.unsubscribe(document.body, "click", handler);
-};
+	context = {},
+	handler = function (data) {
+		console.log("Clicked on body and destroy.");
+		emitter.unsubscribe();
+	};
 emitter = EventEmitter.create(context);
 emitter.subscribe(document.body, "click", handler);
 ```
+
+The bare `emitter.unsubscribe()` above really does detach the click listener.
+Before 2.0 it did not, and the binding had to be removed explicitly with
+`emitter.unsubscribe(document.body, "click", handler)`.
+
 # Licence
 
 MIT License

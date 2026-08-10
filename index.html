@@ -1,16 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title></title>
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>EventEmitter dev playground</title>
 
-    <script src="src/mq.js" type="text/javascript"></script>
-
-    <script src="src/data/mq.timer.js" type="text/javascript"></script>
-    <script src="src/data/mq.store.js" type="text/javascript"></script>
-    <script src="src/data/mq.emitter.js" type="text/javascript"></script>
-
-    <script src="src/mq.static.js" type="text/javascript"></script>
-</head>
-<body />
+		<!-- `pnpm run dev` serves this; the entry installs the globals. -->
+		<script type="module" src="/src/index.ts"></script>
+	</head>
+	<body>
+		<p>Open the console: <code>EventEmitter</code> and <code>MQ</code> are on the global scope.</p>
+	</body>
 </html>

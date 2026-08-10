@@ -1,39 +1,74 @@
 {
-  "name": "@sedlak.r/mq",
-  "version": "1.5.0",
-  "description": "Message queue for events",
-  "source": "src/index.js",
-  "main": "./dist/mq.min.js",
-  "exports": {
-    ".": "./dist/mq.min.js",
-    "./*": "./dist/*.js"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "eslint": "^8.26.0",
-    "grunt": "^1.5.3",
-    "grunt-cli": "^1.4.3",
-    "grunt-contrib-clean": "^2.0.1",
-    "grunt-contrib-concat": "^2.1.0",
-    "grunt-contrib-jasmine": "^3.0.0",
-    "grunt-contrib-uglify": "^5.2.2",
-    "grunt-contrib-watch": "^1.1.0",
-    "grunt-template-jasmine-istanbul": "^0.5.0"
-  },
-  "scripts": {
-    "test": "grunt test"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "author": "Stanislav Hacker",
-  "contributors": [
-    {
-      "name": "Radek Sedlák <sedlak.r@gmail.com>"
-    },
-    {
-      "name": "Stanislav Hacker"
-    }
-  ],
-  "license": "ISC"
+	"name": "@sedlak.r/mq",
+	"version": "2.0.0",
+	"packageManager": "pnpm@11.20.0",
+	"description": "Message queue for events",
+	"source": "src/index.ts",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"unpkg": "./dist/mq.min.js",
+	"jsdelivr": "./dist/mq.min.js",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./pure": {
+			"types": "./dist/pure.d.ts",
+			"import": "./dist/pure.mjs",
+			"require": "./dist/pure.js",
+			"default": "./dist/pure.js"
+		},
+		"./package.json": "./package.json",
+		"./*": "./dist/*.js"
+	},
+	"files": [
+		"dist",
+		"CHANGELOG.md"
+	],
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build --mode esm && vite build --mode cjs && vite build && vite build --mode min && tsc",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"bench": "vitest bench --run",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"prepublishOnly": "pnpm run lint && pnpm test && pnpm run build"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/sedlakr/EventEmitter.git"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"author": "Stanislav Hacker",
+	"contributors": [
+		{
+			"name": "Radek Sedlák <sedlak.r@gmail.com>"
+		},
+		{
+			"name": "Stanislav Hacker"
+		}
+	],
+	"license": "ISC",
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@vitest/coverage-v8": "^4.1.10",
+		"eslint": "^10.8.0",
+		"globals": "^17.9.0",
+		"jsdom": "^30.0.1",
+		"prettier": "^3.9.6",
+		"typescript-eslint": "^8.65.0",
+		"vite": "^8.2.0",
+		"vitest": "^4.1.10"
+	}
 }

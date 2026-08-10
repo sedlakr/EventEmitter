@@ -1,546 +1,259 @@
-if (globalThis.MQ) {
-	console.warn("MQ already exists on globalThis, redefining");
-}
-globalThis.MQ = {};
-;/*global MQ*/
-MQ.Timer = (function (MQ, p) {
-	"use strict";
-
+/*! @sedlak.r/mq@2.0.0 */
+(function() {
+	//#region src/context.ts
 	/**
-	 * Timer for emitter
-	 * @param {number} timeout
-	 * @param {function} callback
-	 * @constructor
-	 */
-	function Timer(timeout, callback) {
-		/** @type {number}*/
-		this.timeout = timeout || 30;
-		/** @type {number}*/
-		this.timer = 0;
-		/** @type {function}*/
-		this.callback = callback;
+	* The sentinel context meaning "no context was set".
+	*
+	* Emitters constructed without a context get this, and both the store and the
+	* emitter branch on identity against it - a default-context unsubscribe clears
+	* everything, a custom-context one clears only its own records.
+	*
+	* It was previously the public, writable `MQ.mqDefault`, so it stays mutable
+	* here and the global namespace exposes it as an accessor pointing at this
+	* same binding.
+	*/
+	var state = { mqDefault: globalThis };
+	function getMqDefault$1() {
+		return state.mqDefault;
 	}
-
-	//shortcut
-	p = Timer.prototype;
-
+	function setMqDefault$1(value) {
+		state.mqDefault = value;
+	}
+	//#endregion
+	//#region src/store.ts
 	/**
-	 * Run
-	 */
-	p.run = function () {
-		//already running
-		if (this.timer) {
-			return;
-		}
-		//create timer
-		this.timer = setTimeout(interval.bind(this, this.callback), this.timeout);
-	};
-
-	/**
-	 * Cancel
-	 */
-	p.cancel = function () {
-		//already running
-		if (this.timer) {
-			clearTimeout(this.timer);
-			this.timer = 0;
+	* One subscription. `removed` is set before the record is spliced out so that
+	* a dispatch already in flight - `evaluate` iterates a clone - skips handlers
+	* that unsubscribed during that same dispatch.
+	*/
+	var StoreRecord$1 = class {
+		context;
+		handler;
+		removed;
+		constructor(context, handler) {
+			this.context = context;
+			this.handler = handler;
+			this.removed = false;
 		}
 	};
-
 	/**
-	 * @this {Timer}
-	 * @param {Function} handler
-	 */
-	function interval(handler) {
-		//noinspection JSUnresolvedFunction
-		this.cancel();
-		handler();
-	}
-
-	//noinspection JSUnusedGlobalSymbols
-	p.version = "1.0";
-	return Timer;
-
-}(MQ));;/*global MQ*/
-MQ.Store = (function (MQ, p) {
-	"use strict";
-
-	/**
-	 * Event name create
-	 * @param {Object} store
-	 * @param {string} name
-	 * @returns {Array.<StoreRecord>}
-	 */
+	* Returns the record list for an event, creating it on first use.
+	*/
 	function event(store, name) {
 		let data = store[name];
-
-		//events not exists
 		if (!data) {
 			data = [];
 			store[name] = data;
 		}
 		return data;
 	}
-
 	/**
-	 * Context event name create
-	 * @param {Object} store
-	 * @param {Object} context
-	 * @param {string} name
-	 * @returns {Array.<StoreRecord>}
-	 */
-	function ctxEvent(store, context, name){
-		const data = event(store, name);
-
-		return data.filter(item => item.context === context);
+	* Returns only the records registered under a given context.
+	*/
+	function ctxEvent(store, context, name) {
+		return event(store, name).filter((item) => item.context === context);
 	}
-
-	//noinspection JSValidateJSDoc
 	/**
-	 * Load based on context
-	 * @param {Array.<StoreRecord>} data
-	 * @param {Object} params
-	 */
+	* Invokes every live handler. The list is cloned first so that handlers which
+	* unsubscribe during dispatch do not shift the iteration out from under it.
+	*/
 	function evaluate(data, params) {
-		//iterate
-		let i,
-			length,
-			record;
-
-		//clone data and read length
-		data = data.slice(0);
-		length = data.length;
-		//iterate all
-		for (i = 0; i < length; i++) {
-			//record
-			record = data[i];
-			//check if is valid
-			if (!record.removed) {
-				record.handler.apply(record.context, params ? [params] : []);
-			}
+		const records = data.slice(0);
+		const length = records.length;
+		for (let i = 0; i < length; i++) {
+			const record = records[i];
+			if (!record.removed) record.handler.apply(record.context, params ? [params] : []);
 		}
 	}
-
-	//noinspection JSValidateJSDoc
 	/**
-	 * Request based on context
-	 * @param {Array.<StoreRecord>} data
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
+	* Invokes the single handler and returns its value. Exactly one handler must
+	* be registered, since a return value is meaningless otherwise.
+	*/
 	function request(data, name, params) {
-		let record,
-			result,
-			length = data.length;
-
-		//error
-		if (length === 0) {
-			throw new Error("EventEmitter: Can not make request on event that has not handler for '" + name + "'.");
-		}
-		if (length > 1) {
-			throw new Error("EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.");
-		}
-		//get record
-		record = data[0];
-		//check if is valid
-		result = record.handler.apply(record.context, params ? [params] : []);
-		//no return
-		if (result === undefined) {
-			console.warn("EventEmitter: Return from request '" + name + "' is empty! This is might not be valid state.");
-		}
-		//return
+		const length = data.length;
+		if (length === 0) throw new Error("EventEmitter: Can not make request on event that has not handler for '" + name + "'.");
+		if (length > 1) throw new Error("EventEmitter: Can not make request on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.");
+		const record = data[0];
+		const result = record.handler.apply(record.context, params ? [params] : []);
+		if (result === void 0) console.warn("EventEmitter: Return from request '" + name + "' is empty! This is might not be valid state.");
 		return result;
 	}
-
-	//noinspection JSValidateJSDoc
 	/**
-	 * Demand based on context
-	 * @param {Array.<StoreRecord>} data
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
+	* Like `request`, but tolerates having no handler at all and returns
+	* `undefined` in that case.
+	*/
 	function demand(data, name, params) {
-		let record,
-			result,
-			length = data.length;
-
-		//error
-		if (length > 1) {
-			throw "EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.";
-		}
-		//get data if handler exists
+		const length = data.length;
+		let result;
+		if (length > 1) throw new Error("EventEmitter: Can not make demand on event that has more then one handler. Use EventEmitter.event('" + name + "') instead.");
 		if (length) {
-			//get record
-			record = data[0];
-			//check if is valid
+			const record = data[0];
 			result = record.handler.apply(record.context, params ? [params] : []);
 		}
-		//return
 		return result;
 	}
-
-	//noinspection JSValidateJSDoc
 	/**
-	 * Demand based on context
-	 * @param {Array.<StoreRecord>} data
-	 * @return {number}
-	 */
-	function watching(data) {
-		return data.length;
-	}
-
-	//noinspection JSValidateJSDoc
-	/**
-	 * Remove by name
-	 * @param {Object.<string, Array.<StoreRecord>>} store
-	 * @param {Object} context
-	 * @param {string} name
-	 * @param {function=} handler
-	 */
+	* Removes the records for one event name.
+	*/
 	function removeByName(store, context, name, handler) {
-		let i,
-			record,
-			canRemove,
-			newData = [],
-			data = event(store, name),
-			length = data.length;
-
-		//clear all, no context set
-		if (context === MQ.mqDefault) {
-			store[name] = newData;
-		} else {
-			//iterate all
-			for (i = length - 1; i >= 0; i--) {
-				//record
-				record = data[i];
-				//remove right context and right handler
-				canRemove = handler && record.context === context && record.handler === handler;
-				//remove right context
-				canRemove = canRemove || !handler && record.context === context;
-
-				record.removed = canRemove;
-				if (canRemove) {
-					data.splice(i, 1);
-				}
-			}
+		const data = event(store, name);
+		if (context === getMqDefault$1()) {
+			for (const record of data) record.removed = true;
+			store[name] = [];
+		} else for (let i = data.length - 1; i >= 0; i--) {
+			const record = data[i];
+			let canRemove = Boolean(handler) && record.context === context && record.handler === handler;
+			canRemove = canRemove || !handler && record.context === context;
+			record.removed = canRemove;
+			if (canRemove) data.splice(i, 1);
 		}
 	}
-
-	//noinspection JSValidateJSDoc
 	/**
-	 * Remove by context
-	 * @param {Object.<string, Array.<StoreRecord>>} store
-	 * @param {Object} context
-	 */
+	* Removes every record belonging to a context, across all event names.
+	*/
 	function removeByContext(store, context) {
-		let i,
-			key,
-			data,
-			record,
-			length,
-			canRemove,
-			isDefault = context === MQ.mqDefault;
-
-		for (key in store) {
-			if (store.hasOwnProperty(key)) {
-				//load data
-				data = store[key];
-				length = data.length;
-				//iterate all
-				for (i = length - 1; i >= 0; i--) {
-					//record
-					record = data[i];
-					//remove right context
-					canRemove = record.context === context || isDefault;
-
-					record.removed = canRemove;
-					if (canRemove) {
-						data.splice(i, 1);
-					}
-				}
+		const isDefault = context === getMqDefault$1();
+		for (const data of Object.values(store)) for (let i = data.length - 1; i >= 0; i--) {
+			const record = data[i];
+			const canRemove = record.context === context || isDefault;
+			record.removed = canRemove;
+			if (canRemove) data.splice(i, 1);
+		}
+	}
+	/**
+	* Store for emitter.
+	*/
+	var Store$1 = class {
+		store;
+		constructor() {
+			this.store = {};
+		}
+		save(context, name, handler) {
+			const normalized = name.toLowerCase();
+			event(this.store, normalized).push(new StoreRecord$1(context, handler));
+		}
+		remove(context, name, handler) {
+			const normalized = name ? name.toLowerCase() : name;
+			if (normalized !== void 0 && normalized !== null) removeByName(this.store, context, normalized, handler);
+			else removeByContext(this.store, context);
+		}
+		evaluate(name, params) {
+			const normalized = name.toLowerCase();
+			evaluate(event(this.store, normalized), params);
+		}
+		request(name, params) {
+			const normalized = name.toLowerCase();
+			return request(event(this.store, normalized), normalized, params);
+		}
+		ctxRequest(ctx, name, params) {
+			const normalized = name.toLowerCase();
+			return request(ctxEvent(this.store, ctx, normalized), normalized, params);
+		}
+		demand(name, params) {
+			const normalized = name.toLowerCase();
+			return demand(event(this.store, normalized), normalized, params);
+		}
+		watching(name) {
+			const normalized = name.toLowerCase();
+			return event(this.store, normalized).length;
+		}
+		ctxWatching(ctx, name) {
+			const normalized = name.toLowerCase();
+			return ctxEvent(this.store, ctx, normalized).length;
+		}
+	};
+	Store$1.prototype.version = "2.0.0";
+	//#endregion
+	//#region src/timer.ts
+	/**
+	* Timer for emitter.
+	*
+	* Wraps a single `setTimeout`. `notify()` batches through this, and the 30 ms
+	* default is observable public API - the README documents it and the specs
+	* assert on it - so it must not become a microtask.
+	*/
+	var Timer$1 = class {
+		timeout;
+		timer;
+		callback;
+		constructor(timeout, callback) {
+			this.timeout = timeout || 30;
+			this.timer = 0;
+			this.callback = callback;
+		}
+		/**
+		* Starts the timer. Calling it again while already running is a no-op.
+		*/
+		run() {
+			if (this.timer) return;
+			this.timer = setTimeout(() => {
+				this.cancel();
+				this.callback();
+			}, this.timeout);
+		}
+		/**
+		* Stops a running timer. Safe to call when it is not running.
+		*/
+		cancel() {
+			if (this.timer) {
+				clearTimeout(this.timer);
+				this.timer = 0;
 			}
 		}
-	}
-
-	//noinspection JSValidateJSDoc
-	/**
-	 * Remove
-	 * @param {Object.<string, Array.<StoreRecord>>} store
-	 * @param {Object} context
-	 * @param {string=} name
-	 * @param {function=} handler
-	 */
-	function remove(store, context, name, handler) {
-		//remove by name
-		if (name !== undefined && name !== null) {
-			removeByName(store, context, name, handler);
-		} else {
-			removeByContext(store, context);
-		}
-	}
-
-	/**
-	 * Store record
-	 * @param {Object} context
-	 * @param {Function} handler
-	 * @constructor
-	 */
-	function StoreRecord(context, handler) {
-		/** @type {Object}*/
-		this.context = context;
-		/** @type {Function}*/
-		this.handler = handler;
-		/** @type {boolean}*/
-		this.removed = false;
-	}
-
-	/**
-	 * Store for emitter
-	 * @constructor
-	 */
-	function Store() {
-		//noinspection JSValidateJSDoc
-		/** @type {Object.<string, Array.<StoreRecord>>}*/
-		this.store = {};
-	}
-
-	//shortcut
-	p = Store.prototype;
-
-	/**
-	 * Save
-	 * @param {Object} context
-	 * @param {string} name
-	 * @param {function} handler
-	 */
-	p.save = function (context, name, handler) {
-		//normalize
-		name = name.toLowerCase();
-		//get store
-		//noinspection JSValidateTypes,JSUnresolvedVariable
-		event(this.store, name).push(new StoreRecord(context, handler));
 	};
-
+	Timer$1.prototype.version = "2.0.0";
+	//#endregion
+	//#region src/emitter.ts
 	/**
-	 * Remove
-	 * @param {Object} context
-	 * @param {string|null=} name
-	 * @param {function=} handler
-	 */
-	p.remove = function (context, name, handler) {
-		//normalize
-		name = name ? name.toLowerCase() : name;
-		//get store
-		//noinspection JSUnresolvedVariable
-		remove(this.store, context, name, handler);
-	};
-
+	* Every emitter instance shares one registry - `create()` hands out a new
+	* instance bound to a different context, not a separate event bus. The notify
+	* queue and debug flags are process-wide for the same reason.
+	*/
+	var timer = null;
+	var notifyQueue = [];
+	var debugFilters = [];
+	var debugMode = false;
+	var simpleMode = false;
+	var store = new Store$1();
 	/**
-	 * Evaluate
-	 * @param {string} name
-	 * @param {Object} params
-	 */
-	p.evaluate = function (name, params) {
-		//normalize
-		name = name.toLowerCase();
-		//evaluate
-		//noinspection JSUnresolvedVariable
-		evaluate(event(this.store, name), params);
-	};
-
-	/**
-	 * Request
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
-	p.request = function (name, params) {
-		//normalize
-		const normalizedName = normalizeName(name);
-
-		//evaluate
-		return request(event(this.store, normalizedName), normalizedName, params);
-	};
-
-	/**
-	 * Contextual request
-	 * @param {Object} ctx
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
-	p.ctxRequest = function (ctx, name, params) {
-		const normalizedName = normalizeName(name);
-
-		return request(ctxEvent(this.store, ctx, normalizedName), normalizedName, params);
-	};
-
-	/**
-	 * Normalize evt name
-	 * @param {string} name
-	 * @returns {string}
-	 */
-	function normalizeName(name) {
-		return name.toLowerCase();
-	}
-
-	/**
-	 * Demand
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
-	p.demand = function (name, params) {
-		//normalize
-		name = name.toLowerCase();
-		//evaluate
-		//noinspection JSUnresolvedVariable
-		return demand(event(this.store, name), name, params);
-	};
-
-	/**
-	 * Watching
-	 * @param {string} name
-	 * @return {number}
-	 */
-	p.watching = function (name) {
-		//normalize
-		name = name.toLowerCase();
-		//evaluate
-		//noinspection JSUnresolvedVariable
-		return watching(event(this.store, name));
-	};
-
-	/**
-	 * Contextual watching
-	 * @param {Object} ctx
-	 * @param {string} name
-	 * @return {Object}
-	 */
-	p.ctxWatching = function (ctx, name) {
-		//normalize
-		name = name.toLowerCase();
-		//evaluate
-		//noinspection JSUnresolvedVariable
-		return watching(ctxEvent(this.store, ctx, name));
-	};
-
-
-	//noinspection JSUnusedGlobalSymbols
-	p.version = "1.0";
-	return Store;
-
-}(MQ));
-;/*global MQ*/
-MQ.Emitter = (function (MQ, p) {
-	"use strict";
-
-	let timer,
-		/** @type {Array.<NotifyQueueItem>}*/
-		notifyQueue = [],
-		debugFilters = [],
-		debugMode = false,
-		simpleMode = false,
-		store = new MQ.Store();
-
-	/**
-	 * @typedef {Object} NotifyQueueItem
-	 * @property {string} name
-	 * @property {Object} params
-	 */
-
-	//set data
-	/**
-	 * @type {Window}
-	 * @public
-	 */
-	MQ.mqDefault = globalThis;
-
-	/**
-	 * Add event
-	 * @param {Window|HTMLElement|HTMLDocument} element
-	 * @param {string} eventType
-	 * @param {function} handler
-	 * @param {object=} eventOptions
-	 */
+	* Binds a DOM listener, routing the two synthetic event types the library
+	* supports.
+	*/
 	function addEvent(element, eventType, handler, eventOptions) {
-		//tripleclick
 		if (eventType === "tripleclick") {
 			addTripleClick(element, handler);
 			return;
 		}
-
-		// noinspection JSUnresolvedVariable
-		/**
-		 * Done
-		 * @param {Event} e
-		 */
-		handler.eventDoneRuntime = handler.eventDoneRuntime || function (e) {
+		handler.eventDoneRuntime = handler.eventDoneRuntime || function(e) {
 			handler(globalThis.event || e);
 		};
-
-		//noinspection JSUnresolvedVariable
 		element.addEventListener(eventType, handler.eventDoneRuntime, eventOptions ?? false);
-		//for firefox
-		if (eventType === "mousewheel") {
-			//noinspection JSUnresolvedVariable
-			addEvent(element, "DOMMouseScroll", handler.eventDoneRuntime);
-		}
+		if (eventType === "mousewheel") addEvent(element, "DOMMouseScroll", handler.eventDoneRuntime);
 	}
-
 	/**
-	 * Remove handler
-	 * @param {Window|HTMLElement} element
-	 * @param {string|null} eventType
-	 * @param {function} handler
-	 */
+	* Unbinds a DOM listener bound through `addEvent`.
+	*/
 	function removeEvent(element, eventType, handler) {
-		//tripleclick
 		if (eventType === "tripleclick") {
 			removeTripleClick(element, handler);
 			return;
 		}
-		//noinspection JSUnresolvedVariable
-		element.removeEventListener(eventType, handler.eventDoneRuntime);
-		//for firefox
-		if (eventType === "mousewheel") {
-			//noinspection JSUnresolvedVariable
-			removeEvent(element, "DOMMouseScroll", handler.eventDoneRuntime);
-		}
-		//remove data
+		if (handler.eventDoneRuntime) element.removeEventListener(eventType, handler.eventDoneRuntime);
+		if (eventType === "mousewheel") removeEvent(element, "DOMMouseScroll", handler.eventDoneRuntime);
 		cleanHandlerData(handler);
 	}
-
 	/**
-	 * Add triple click
-	 * @param {Element} el
-	 * @param {Function} handler
-	 */
+	* Synthesises a triple click from three clicks inside 400 ms.
+	*/
 	function addTripleClick(el, handler) {
-		let clickCount = 0,
-			clickStart = 0;
-
-		/**
-		 * Triple click dblclick handler
-		 * @param {Event} event
-		 */
-		handler.tripleDblClickHandler = function (event) {
-			if (!document.body.addEventListener) {
-				//noinspection JSUnresolvedFunction
-				handler.tripleClickHandler(event || globalThis.event);
-			}
+		let clickCount = 0;
+		let clickStart = 0;
+		handler.tripleDblClickHandler = function(event) {
+			if (!document.body.addEventListener) handler.tripleClickHandler(event || globalThis.event);
 		};
-		/**
-		 * Triple click click handler
-		 * @param {Event} event
-		 */
-		handler.tripleClickHandler = function (event) {
-			//event convert
+		handler.tripleClickHandler = function(event) {
 			event = event || globalThis.event;
-			//check date
-			if (clickStart > (new Date()).getTime() - 400) {
+			if (clickStart > (/* @__PURE__ */ new Date()).getTime() - 400) {
 				clickCount += 1;
 				if (clickCount === 3) {
 					clickCount = 0;
@@ -550,542 +263,438 @@ MQ.Emitter = (function (MQ, p) {
 				clickCount = 1;
 				clickStart = 0;
 			}
-			//click start
-			if (!clickStart) {
-				clickStart = new Date().getTime();
-			}
+			if (!clickStart) clickStart = (/* @__PURE__ */ new Date()).getTime();
 		};
-		//noinspection JSUnresolvedVariable
 		addEvent(el, "click", handler.tripleClickHandler);
-		//noinspection JSUnresolvedVariable
 		addEvent(el, "dblclick", handler.tripleDblClickHandler);
 	}
-
-	/**
-	 * Remove triple click
-	 * @param {Element} el
-	 * @param {Function} handler
-	 */
 	function removeTripleClick(el, handler) {
-		//noinspection JSUnresolvedVariable
 		removeEvent(el, "click", handler.tripleClickHandler);
-		//noinspection JSUnresolvedVariable
 		removeEvent(el, "dblclick", handler.tripleDblClickHandler);
-		//remove data
 		cleanTripleClickHandlerData(handler);
 		cleanHandlerData(handler);
 	}
-
-	/**
-	 * @param {function} handler
-	 */
 	function cleanHandlerData(handler) {
-		//remove data
 		delete handler.element;
 		delete handler.type;
 		delete handler.context;
 	}
-
-	/**
-	 * @param {function} handler
-	 */
 	function cleanTripleClickHandlerData(handler) {
-		//remove data
 		delete handler.tripleClickHandler;
 		delete handler.tripleDblClickHandler;
 	}
-
-	/**
-	 * Stop propagation
-	 * @param {Event} e
-	 */
 	function stopPropagation(e) {
 		e.cancelBubble = true;
-		if (e.stopPropagation !== undefined) {
-			e.stopPropagation();
-		}
+		if (e.stopPropagation !== void 0) e.stopPropagation();
 	}
-
-	/**
-	 * Cancel default
-	 * @param {Event} e
-	 * @returns {boolean}
-	 */
 	function cancelDefault(e) {
 		const evt = e ? e : globalThis.event;
-
-		if (evt.preventDefault) {
-			evt.preventDefault();
-		}
+		if (evt.preventDefault) evt.preventDefault();
 		evt.returnValue = false;
 		return false;
 	}
-
 	/**
-	 * Normalize params
-	 * @param {Document|Window|Element|string} nameOrElement
-	 * @param {string|function} nameOrHandler
-	 * @param {function} handler
-	 * @param {Array.<Object>=} paramsOrUndefined
-	 * @returns {{element: Element, name: string, handler: function, params: Array.<Object>}}
-	 */
+	* Accepts either `(name, handler, params)` or `(element, name, handler, params)`.
+	*/
 	function normalizeSubscribeParams(nameOrElement, nameOrHandler, handler, paramsOrUndefined) {
-		//type 1
-		if (typeof nameOrElement === "string" && typeof nameOrHandler === "function") {
-			//return
-			return {
-				element: null,
-				name: nameOrElement,
-				handler: nameOrHandler,
-				params: paramsOrUndefined || []
-			};
-		}
-
-		//type 2
-		const isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
-		const isDocument = nameOrElement === document;
-		const isWindow = nameOrElement === globalThis;
-
-		//check
-		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
-			//return
-			return {
-				element: nameOrElement,
-				name: nameOrHandler,
-				handler: handler,
-				params: paramsOrUndefined || []
-			};
-		}
-
-		//error
+		if (typeof nameOrElement === "string" && typeof nameOrHandler === "function") return {
+			element: null,
+			name: nameOrElement,
+			handler: nameOrHandler,
+			params: paramsOrUndefined || []
+		};
+		const target = nameOrElement;
+		if ((target.nodeType && target.nodeType === 1 || target === globalThis || target === document) && typeof nameOrHandler === "string" && typeof handler === "function") return {
+			element: nameOrElement,
+			name: nameOrHandler,
+			handler,
+			params: paramsOrUndefined || []
+		};
 		throw new Error("EventEmitter: Incorrect parameters given into function subscribe() or unsubscribe().");
 	}
-
 	/**
-	 * Normalize params
-	 * @param {Document|Window|Element|string} nameOrElement
-	 * @param {string|function} nameOrHandler
-	 * @param {function} handler
-	 * @returns {{element: Element, name: string, handler: function}|null}
-	 */
+	* Same shapes as above, plus the name-only and no-argument forms.
+	*
+	* The name-only branch has to come first. It used to fall into the catch-all
+	* below, so `unsubscribe(name)` was silently read as `unsubscribe()` and dropped
+	* every subscription for the context - on the default context, every
+	* subscription in the application.
+	*/
 	function normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handler) {
-		//type 1
-		if (nameOrElement === undefined || nameOrHandler === undefined) {
-			//return
-			//noinspection JSValidateTypes
-			return {
-				element: null,
-				name: null,
-				handler: null
-			};
-		}
-
-		//type 2
-		if (typeof nameOrElement === "string" && typeof nameOrHandler === "function") {
-			//return
-			return {
-				element: null,
-				name: nameOrElement,
-				handler: nameOrHandler
-			};
-		}
-
-		//type 3
-		const isElement = nameOrElement.nodeType && nameOrElement.nodeType === 1;
-		const isDocument = nameOrElement === document;
-		const isWindow = nameOrElement === globalThis;
-
-		//check
-		if ((isElement || isWindow || isDocument) && typeof nameOrHandler === "string" && typeof handler === "function") {
-			//return
-			return {
-				element: nameOrElement,
-				name: nameOrHandler,
-				handler: handler
-			};
-		}
-
+		if (typeof nameOrElement === "string" && nameOrHandler === void 0) return {
+			element: null,
+			name: nameOrElement,
+			handler: null
+		};
+		if (nameOrElement === void 0 || nameOrHandler === void 0) return {
+			element: null,
+			name: null,
+			handler: null
+		};
+		if (typeof nameOrElement === "string" && typeof nameOrHandler === "function") return {
+			element: null,
+			name: nameOrElement,
+			handler: nameOrHandler
+		};
+		const target = nameOrElement;
+		if ((target.nodeType && target.nodeType === 1 || target === globalThis || target === document) && typeof nameOrHandler === "string" && typeof handler === "function") return {
+			element: nameOrElement,
+			name: nameOrHandler,
+			handler
+		};
 		return null;
 	}
-
-	/**
-	 * Debug mode reporter
-	 * @param {string} type
-	 * @param {string} eventName
-	 * @param {string} message
-	 * @param {object} data
-	 */
 	function debugReporter(type, eventName, message, data) {
-		//do not debug if not right mode
-		if (!console || !debugMode) {
-			return;
-		}
-		//ignore all events in filter
-		if (debugFilters.indexOf(eventName) >= 0) {
-			return;
-		}
-		//get display fnc
-		if (console[type]) {
-			console[type]("EventEmitter: (" + new Date().toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
-		} else {
-			console.info("EventEmitter: (" + new Date().toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
-		}
+		if (!console || !debugMode) return;
+		if (debugFilters.indexOf(eventName) >= 0) return;
+		const target = console;
+		if (target[type]) target[type]("EventEmitter: (" + (/* @__PURE__ */ new Date()).toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
+		else console.info("EventEmitter: (" + (/* @__PURE__ */ new Date()).toLocaleTimeString() + ") " + message, simpleMode ? "" : data);
 	}
-
-	/**
-	 * Run queue
-	 */
 	function runQueue() {
-		//run
-		let queue = /** @type {NotifyQueueItem}*/notifyQueue.shift();
-
+		let queue = notifyQueue.shift();
 		while (queue) {
 			store.evaluate(queue.name, queue.params);
-			queue = /** @type {NotifyQueueItem}*/notifyQueue.shift();
+			queue = notifyQueue.shift();
 		}
 	}
-
-	//PUBLIC INTERFACE
-
 	/**
-	 * Emitter
-	 * @param {boolean=} isStatic
-	 * @constructor
-	 */
-	function Emitter(isStatic) {
-		/** @type {Object}*/
-		this.context = MQ.mqDefault;
-		/** @type {boolean}*/
-		this.isStatic = isStatic || false;
+	* Element bindings indexed by the context that created them.
+	*
+	* `unsubscribe()` with no arguments has to drain a context's DOM listeners,
+	* and the per-subscriber `handlers` list cannot answer "everything for this
+	* context" - it is reachable only from a handler the caller still holds.
+	*
+	* Object contexts are held weakly, so one dropped without being unsubscribed
+	* takes its binding list with it rather than pinning elements in this module.
+	* A context is not necessarily an object though: `create()` may be called with
+	* no argument at all, and callers pass strings. Those cannot be WeakMap keys,
+	* so they get an ordinary Map.
+	*/
+	var weakBindings = /* @__PURE__ */ new WeakMap();
+	var keyedBindings = /* @__PURE__ */ new Map();
+	/** Whether a context can be used as a WeakMap key. */
+	function isWeakKeyable(context) {
+		return typeof context === "object" && context !== null || typeof context === "function";
 	}
-
-	//shortcut
-	p = Emitter.prototype;
-
+	function getBindings(context) {
+		return isWeakKeyable(context) ? weakBindings.get(context) : keyedBindings.get(context);
+	}
+	function setBindings(context, bindings) {
+		if (isWeakKeyable(context)) weakBindings.set(context, bindings);
+		else keyedBindings.set(context, bindings);
+	}
+	function deleteBindings(context) {
+		if (isWeakKeyable(context)) weakBindings.delete(context);
+		else keyedBindings.delete(context);
+	}
 	/**
-	 * Create new
-	 * @param {Object} context
-	 * @returns {Emitter}
-	 */
-	p.create = function (context) {
-		return new MQ.Emitter().in(context);
-	};
-
-	/**
-	 * Event
-	 * @param {string} name
-	 * @param {Object} params
-	 * @returns {Emitter}
-	 */
-	p.event = function (name, params) {
-		debugReporter("debug", name, "Event for '" + name + "' send with parameters ", params);
-		//evaluate
-		store.evaluate(name, params);
-		//return self
-		return this;
-	};
-
-	/**
-	 * Notify
-	 * @param {string} name
-	 * @param {Object} params
-	 * @returns {MQ.Timer}
-	 */
-	p.notify = function (name, params) {
-		let queue = /** @type {NotifyQueueItem}*/{};
-
-		//reporter
-		debugReporter("debug", name, "Notify for '" + name + "' send with parameters ", params);
-		//name, params
-		queue.name = name;
-		queue.params = params;
-		//save queue
-		notifyQueue.push(queue);
-		//timer not exists, run it
-		if (!timer) {
-			//timer
-			timer = new MQ.Timer(30, function () {
-				runQueue();
-				timer.cancel();
-				timer = null;
-			});
-			//run
-			timer.run();
-		}
-		//return timer
-		return /** @type {MQ.Timer}*/timer;
-	};
-
-	/**
-	 * Request
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
-	p.request = function (name, params) {
-		//evaluate and return response
-		let returnValue = store.request(name, params);
-
-		//reporter
-		debugReporter("debug", name, "Request for '" + name + "' return '" + returnValue + "' for parameters ", params);
-		//return data
-		return returnValue;
-	};
-
-	/**
-	 * Request
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
-	p.ctxRequest = function (name, params) {
-		const ctx = this.context;
-
-		if (ctx === MQ.mqDefault) {
-			throw new Error("Request with context is available only on instances with custom context. Current context is default. ");
-		}
-
-		//evaluate and return response
-		let returnValue = store.ctxRequest(ctx, name, params);
-
-		//reporter
-		debugReporter("debug", name, "Context request for '" + name + "' return '" + returnValue + "' for parameters ", params);
-		//return data
-		return returnValue;
-	};
-
-	/**
-	 * Demand
-	 * @param {string} name
-	 * @param {Object} params
-	 * @return {Object}
-	 */
-	p.demand = function (name, params) {
-		//evaluate and return response
-		let returnValue = store.demand(name, params);
-
-		//reporter
-		debugReporter("debug", name, "Demand for '" + name + "' return '" + returnValue + "' for parameters ", params);
-		//return data
-		return returnValue;
-	};
-
-	/**
-	 * Watching
-	 * @param {string} name
-	 * @return {number}
-	 */
-	p.watching = function (name) {
-		//evaluate and return response
-		let count = store.watching(name);
-
-		//reporter
-		debugReporter("debug", name, "Watching count status for '" + name + "' return '" + count, []);
-		//return data
-		return count;
-	};
-
-	/**
-	 * Watching with context
-	 * @param {string} name
-	 * @return {number}
-	 */
-	p.ctxWatching = function (name) {
-		const ctx = this.context;
-
-		if (ctx === MQ.mqDefault) {
-			throw new Error("Watching with context is available only on instances with custom context. Current context is default. ");
-		}
-
-		//evaluate and return response
-		let count = store.ctxWatching(ctx, name);
-
-		//reporter
-		debugReporter("debug", name, "Context watching count status for '" + name + "' return '" + count, []);
-		//return data
-		return count;
-	};
-
-	/**
-	 * Create handler
-	 * @param {*} context
-	 * @param {{element: Element, name: string, handler: function, params: Array.<Object>}} data
-	 * @return {function}
-	 */
+	* Wraps a subscriber so the DOM hands it `[event, ...params]` bound to the
+	* emitter's context, and records it on the handler for later removal.
+	*/
 	function createHandler(context, data) {
-		//create name by event name
-		let handlers = data.handler.handlers = data.handler.handlers || [];
-
-		/**
-		 * Handler
-		 * @param {Event} event
-		 */
-		function handler(event) {
+		const handlers = data.handler.handlers = data.handler.handlers || [];
+		const handler = function(...args) {
+			const event = args[0];
 			data.handler.apply(context, [[event].concat(data.params)]);
-		}
+		};
 		handler.element = data.element;
 		handler.type = data.name;
 		handler.context = context;
-		//add
 		handlers.push(handler);
-
+		const bindings = getBindings(context) || [];
+		bindings.push({
+			element: data.element,
+			type: data.name,
+			subscriber: data.handler,
+			bound: handler
+		});
+		setBindings(context, bindings);
 		return handler;
 	}
-
 	/**
-	 * Destroy handler
-	 * @param {Object} context
-	 * @param {{element: Element, name: string, handler: function}|null} data
-	 */
-	function destroyHandler(context, data) {
-		let i,
-			handlerType,
-			handlerContext,
-			currentHandler,
-			handlerElement,
-			newHandlers = [],
-			currentType = data.name,
-			currentElement = data.element,
-			handlers = data.handler.handlers || [];
-
-		//iterate all
-		for (i = handlers.length - 1; i >= 0; i--) {
-			//load handler
-			currentHandler = handlers[i];
-			handlerElement = currentHandler.element;
-			handlerType = currentHandler.type;
-			handlerContext = currentHandler.context;
-			//for this element
-			if (handlerElement === currentElement && currentType === handlerType && handlerContext === context) {
-				//remove event
-				removeEvent(data.element, data.name, currentHandler);
-
-			} else {
-				newHandlers.push(currentHandler);
+	* Drops one binding from the context index, once its listener is gone.
+	*/
+	function forgetBinding(context, bound) {
+		const bindings = getBindings(context);
+		if (!bindings) return;
+		const index = bindings.findIndex((binding) => binding.bound === bound);
+		if (index >= 0) bindings.splice(index, 1);
+	}
+	/**
+	* Unbinds every element listener registered under a context.
+	*
+	* This is what makes `emitter.unsubscribe()` actually tear down DOM
+	* subscriptions, which the README has always claimed it does.
+	*/
+	function destroyHandlersByContext(context) {
+		const bindings = getBindings(context);
+		if (!bindings) return;
+		for (const binding of bindings.slice(0)) {
+			removeEvent(binding.element, binding.type, binding.bound);
+			const handlers = binding.subscriber.handlers;
+			if (handlers) {
+				const index = handlers.indexOf(binding.bound);
+				if (index >= 0) handlers.splice(index, 1);
 			}
 		}
-
-		//save new handlers
+		deleteBindings(context);
+	}
+	/**
+	* Removes the bound handlers matching element + type + context.
+	*/
+	function destroyHandler(context, data) {
+		const newHandlers = [];
+		const currentType = data.name;
+		const currentElement = data.element;
+		const handlers = data.handler.handlers || [];
+		for (let i = handlers.length - 1; i >= 0; i--) {
+			const currentHandler = handlers[i];
+			if (currentHandler.element === currentElement && currentType === currentHandler.type && currentHandler.context === context) {
+				removeEvent(data.element, data.name, currentHandler);
+				forgetBinding(context, currentHandler);
+			} else newHandlers.push(currentHandler);
+		}
 		data.handler.handlers = newHandlers;
 	}
-
 	/**
-	 * Subscribe
-	 * @param {Element|string} nameOrElement
-	 * @param {string|function} nameOrHandler
-	 * @param {function=} handlerOrUndefined
-	 * @param {Array.<Object>=} paramsOrUndefined
-	 * @param {object=} eventOptions
-	 * @returns {Emitter}
-	 */
-	p.subscribe = function (nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined, eventOptions) {
-		let context = this.context,
-			data = normalizeSubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined);
-
-		//for element
-		if (data.element) {
-			//noinspection JSUnresolvedVariable
-			addEvent(data.element, data.name, createHandler(context, data), eventOptions);
-		//no element event
-		} else {
-			//save to storage
-			store.save(this.context, data.name, data.handler);
+	* Emitter.
+	*/
+	var Emitter$1 = class Emitter$1 {
+		context;
+		isStatic;
+		constructor(isStatic) {
+			this.context = getMqDefault$1();
+			this.isStatic = isStatic || false;
 		}
-		//return self
-		return this;
-	};
-
-	/**
-	 * Unsubscribe
-	 * @param {Element|string} nameOrElement
-	 * @param {string|function} nameOrHandler
-	 * @param {function=} handlerOrUndefined
-	 * @returns {Emitter}
-	 */
-	p.unsubscribe = function (nameOrElement, nameOrHandler, handlerOrUndefined) {
-		let data = normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined);
-
-		//this is weird
-		if (this.context === MQ.mqDefault && !data.name && !data.handler) {
-			console.warn("EventEmitter: You are calling unsubscribe method without parameters. This is unbind all event through application!");
+		/**
+		* Creates a new emitter bound to `context`, sharing the same registry.
+		*
+		* `context` is optional: callers do use `create()` with no argument, which
+		* yields an emitter whose context is `undefined` - distinct from the default
+		* context, and compared by identity like any other.
+		*/
+		create(context) {
+			return new Emitter$1().in(context);
 		}
-
-		if (data.element) {
-			//destroy handler
-			destroyHandler(this.context, data);
-
-		//no element event
-		} else {
-			//remove from storage
-			store.remove(this.context, data.name, data.handler);
+		/**
+		* Dispatches synchronously.
+		*/
+		event(name, params) {
+			debugReporter("debug", name, "Event for '" + name + "' send with parameters ", params);
+			store.evaluate(name, params);
+			return this;
 		}
-		//return self
-		return this;
-	};
-
-	/**
-	 * Interrupt
-	 * @param {Event} event
-	 * @param {boolean} stopProp Stop propagation
-	 * @param {boolean} cancelDef Cancel default
-	 */
-	p.interrupt = function (event, stopProp, cancelDef) {
-		if (stopProp) {
-			stopPropagation(event);
+		/**
+		* Queues a dispatch onto the shared 30 ms timer.
+		*/
+		notify(name, params) {
+			debugReporter("debug", name, "Notify for '" + name + "' send with parameters ", params);
+			notifyQueue.push({
+				name,
+				params
+			});
+			if (!timer) {
+				timer = new Timer$1(30, function() {
+					runQueue();
+					timer.cancel();
+					timer = null;
+				});
+				timer.run();
+			}
+			return timer;
 		}
-		if (cancelDef) {
-			cancelDefault(event);
+		/**
+		* Dispatches to exactly one handler and returns its value.
+		*/
+		request(name, params) {
+			const returnValue = store.request(name, params);
+			debugReporter("debug", name, "Request for '" + name + "' return '" + returnValue + "' for parameters ", params);
+			return returnValue;
 		}
-	};
-
-	/**
-	 * In
-	 * @param {Object} context
-	 * @returns {Emitter}
-	 */
-	p.in = function (context) {
-		const isStatic = this.isStatic;
-
-		//static
-		if (isStatic) {
-			throw new Error("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
+		/**
+		* As `request`, restricted to handlers sharing this emitter's context.
+		*/
+		ctxRequest(name, params) {
+			const ctx = this.context;
+			if (ctx === getMqDefault$1()) throw new Error("Request with context is available only on instances with custom context. Current context is default. ");
+			const returnValue = store.ctxRequest(ctx, name, params);
+			debugReporter("debug", name, "Context request for '" + name + "' return '" + returnValue + "' for parameters ", params);
+			return returnValue;
 		}
-		//set new context
-		this.context = context;
-		//return it
-		return this;
-	};
-
-	/**
-	 * Set debug mode on / off
-	 * @param {boolean} state
-	 * @param {Array.<string>=} filters
-	 * @param {boolean=} simple
-	 */
-	p.debugMode = function (state, filters, simple) {
-		debugFilters = filters || [];
-		debugMode = state;
-		simpleMode = simple;
-		// store getter when debug mode is on
-		if (state) {
-			p.getStore = function () {
+		/**
+		* As `request`, but tolerates having no handler.
+		*/
+		demand(name, params) {
+			const returnValue = store.demand(name, params);
+			debugReporter("debug", name, "Demand for '" + name + "' return '" + returnValue + "' for parameters ", params);
+			return returnValue;
+		}
+		/**
+		* How many handlers listen to an event.
+		*/
+		watching(name) {
+			const count = store.watching(name);
+			debugReporter("debug", name, "Watching count status for '" + name + "' return '" + count, []);
+			return count;
+		}
+		/**
+		* As `watching`, restricted to this emitter's context.
+		*/
+		ctxWatching(name) {
+			const ctx = this.context;
+			if (ctx === getMqDefault$1()) throw new Error("Watching with context is available only on instances with custom context. Current context is default. ");
+			const count = store.ctxWatching(ctx, name);
+			debugReporter("debug", name, "Context watching count status for '" + name + "' return '" + count, []);
+			return count;
+		}
+		/**
+		* Subscribes to a named event, or to a DOM event on an element.
+		*/
+		subscribe(nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined, eventOptions) {
+			const context = this.context;
+			const data = normalizeSubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined, paramsOrUndefined);
+			if (data.element) addEvent(data.element, data.name, createHandler(context, data), eventOptions);
+			else store.save(this.context, data.name, data.handler);
+			return this;
+		}
+		/**
+		* Stops listening. Given only an event name, drops that event's handlers for
+		* this context. With no arguments, drops everything for this context.
+		*/
+		unsubscribe(nameOrElement, nameOrHandler, handlerOrUndefined) {
+			const data = normalizeUnsubscribeParams(nameOrElement, nameOrHandler, handlerOrUndefined);
+			if (this.context === getMqDefault$1() && !data.name && !data.handler) console.warn("EventEmitter: You are calling unsubscribe method without parameters. This is unbind all event through application!");
+			if (data.element) destroyHandler(this.context, data);
+			else {
+				store.remove(this.context, data.name, data.handler);
+				if (!data.name && !data.handler) destroyHandlersByContext(this.context);
+			}
+			return this;
+		}
+		/**
+		* Helper for stopping a browser event.
+		*/
+		interrupt(event, stopProp, cancelDef) {
+			if (stopProp) stopPropagation(event);
+			if (cancelDef) cancelDefault(event);
+		}
+		/**
+		* Rebinds this emitter to another context. Not allowed on the static one.
+		*/
+		in(context) {
+			if (this.isStatic) throw new Error("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
+			this.context = context;
+			return this;
+		}
+		/**
+		* Turns console reporting on or off, process-wide.
+		*/
+		debugMode(state, filters, simple) {
+			debugFilters = filters || [];
+			debugMode = state;
+			simpleMode = simple;
+			if (state) Emitter$1.prototype.getStore = function() {
 				return store;
 			};
-		} else {
-			p.getStore = undefined;
+			else Emitter$1.prototype.getStore = void 0;
+			console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 		}
-		console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 	};
-
-	//noinspection JSUnusedGlobalSymbols
-	p.version = "1.0";
-	//return event
-	return Emitter;
-
-}(MQ));
-;/*global MQ*/
-//EventEmitter create
-if (globalThis.EventEmitter) {
-	console.warn(" EventEmitter already exists on globalThis, redefining");
-}
-globalThis.EventEmitter = new MQ.Emitter(true); //eslint-disable-line
+	Emitter$1.prototype.version = "2.0.0";
+	//#endregion
+	//#region src/shared.ts
+	/**
+	* Rendezvous point so that duplicate copies of this package share one bus.
+	*
+	* A bundler can easily end up with more than one copy - a library bundling it
+	* plus the host app importing it, two versions in a dependency tree, an ESM and
+	* a CommonJS build loaded side by side. Each copy would otherwise build its own
+	* `Store`, and events sent through one would never reach handlers subscribed
+	* through another. Nothing throws; the bus just silently splits in two.
+	*
+	* The first copy to load publishes its classes and singleton here; every later
+	* copy adopts them and leaves its own inert. `Symbol.for` is used so the lookup
+	* works across copies without relying on a string property that application
+	* code might also touch.
+	*/
+	var REGISTRY = Symbol.for("@sedlak.r/mq");
+	/**
+	* Returns the already-published runtime, or publishes and returns this copy's.
+	*
+	* The factory is only called when this copy is first, so a later copy never
+	* pays to construct a `Store` it will not use.
+	*/
+	function adoptOrPublish(version, create) {
+		const host = globalThis;
+		const existing = host[REGISTRY];
+		if (existing) {
+			if (existing.version !== version) console.warn(`EventEmitter: using @sedlak.r/mq ${existing.version}, which loaded first, but this copy is ${version}. Both are present in the bundle; they now share one event bus, and the older API is the one in effect. Deduplicate the dependency to remove this warning.`);
+			return existing;
+		}
+		const runtime = create();
+		host[REGISTRY] = runtime;
+		return runtime;
+	}
+	//#endregion
+	//#region src/pure.ts
+	/**
+	* Entry point that does not define the `MQ` / `EventEmitter` globals.
+	*
+	* It does still use the `Symbol.for` registry in `./shared.js`, because that is
+	* the only way duplicate copies of the package can find each other and share a
+	* single event bus. Nothing readable by application code is added to
+	* `globalThis`; import `@sedlak.r/mq` instead if you want the two globals.
+	*/
+	var runtime = adoptOrPublish("2.0.0", () => ({
+		version: "2.0.0",
+		Emitter: Emitter$1,
+		Store: Store$1,
+		StoreRecord: StoreRecord$1,
+		Timer: Timer$1,
+		getMqDefault: getMqDefault$1,
+		setMqDefault: setMqDefault$1,
+		EventEmitter: new Emitter$1(true)
+	}));
+	/**
+	* These resolve to whichever copy of the package loaded first, so two copies in
+	* one bundle still dispatch to each other. When this copy is the only one - the
+	* normal case - they are exactly its own.
+	*/
+	var Emitter = runtime.Emitter;
+	var Store = runtime.Store;
+	runtime.StoreRecord;
+	var Timer = runtime.Timer;
+	/** The shared, context-less emitter. Cannot be rebound with `in()`. */
+	var EventEmitter = runtime.EventEmitter;
+	var getMqDefault = runtime.getMqDefault;
+	var setMqDefault = runtime.setMqDefault;
+	//#endregion
+	//#region src/index.ts
+	/**
+	* Default entry point - a backward-compatible superset of the old bundle.
+	*
+	* It installs `globalThis.MQ` and `globalThis.EventEmitter` exactly as the
+	* concatenated build did, because `main` has always pointed at that bundle and
+	* existing consumers depend on the globals. On top of that it re-exports
+	* everything as named exports, so new code can import instead.
+	*
+	* Import `@sedlak.r/mq/pure` for the same API without the globals.
+	*/
+	if (globalThis.MQ && globalThis.MQ.Emitter !== Emitter) console.warn("MQ already exists on globalThis and was defined by another library; redefining");
+	var namespace = {
+		Emitter,
+		Store,
+		Timer
+	};
+	Object.defineProperty(namespace, "mqDefault", {
+		get: getMqDefault,
+		set: setMqDefault,
+		enumerable: true,
+		configurable: true
+	});
+	globalThis.MQ = namespace;
+	if (globalThis.EventEmitter && globalThis.EventEmitter !== EventEmitter) console.warn("EventEmitter already exists on globalThis and was defined by another library; redefining");
+	globalThis.EventEmitter = EventEmitter;
+	//#endregion
+})();

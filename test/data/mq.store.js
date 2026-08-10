@@ -1,4 +1,3 @@
-/*global MQ, describe, it, beforeEach, spyOn*/
 describe("The MQ.Store", function () {
 	"use strict";
 
@@ -11,7 +10,7 @@ describe("The MQ.Store", function () {
 			counter: function () {
 				count++;
 				return count;
-			}
+			},
 		};
 	});
 
@@ -19,20 +18,20 @@ describe("The MQ.Store", function () {
 		var store = new MQ.Store(),
 			context = {};
 
-		spyOn(handler, "counter").and.callThrough();
+		vi.spyOn(handler, "counter");
 
 		store.save(context, "test", handler.counter);
 
-		store.evaluate("test", {param1: "test"});
+		store.evaluate("test", { param1: "test" });
 		expect(count).toBe(1);
-		expect(handler.counter).toHaveBeenCalledWith({param1: "test"});
+		expect(handler.counter).toHaveBeenCalledWith({ param1: "test" });
 
-		store.evaluate("test", {param2: "test"});
+		store.evaluate("test", { param2: "test" });
 		expect(count).toBe(2);
-		expect(handler.counter).toHaveBeenCalledWith({param2: "test"});
+		expect(handler.counter).toHaveBeenCalledWith({ param2: "test" });
 
 		store.remove(context, "test", handler.counter);
-		store.evaluate("test", {param1: "test"});
+		store.evaluate("test", { param1: "test" });
 
 		expect(count).toBe(2);
 	});
@@ -42,24 +41,24 @@ describe("The MQ.Store", function () {
 			context = {},
 			returned;
 
-		spyOn(handler, "counter").and.callThrough();
+		vi.spyOn(handler, "counter");
 
 		store.save(context, "test", handler.counter);
 
-		returned = store.request("test", {param1: "test"});
+		returned = store.request("test", { param1: "test" });
 		expect(count).toBe(1);
 		expect(returned).toBe(1);
-		expect(handler.counter).toHaveBeenCalledWith({param1: "test"});
+		expect(handler.counter).toHaveBeenCalledWith({ param1: "test" });
 
-		returned = store.request("test", {param2: "test"});
+		returned = store.request("test", { param2: "test" });
 		expect(count).toBe(2);
 		expect(returned).toBe(2);
-		expect(handler.counter).toHaveBeenCalledWith({param2: "test"});
+		expect(handler.counter).toHaveBeenCalledWith({ param2: "test" });
 
 		store.remove(context, "test", handler.counter);
 
 		expect(function () {
-			store.request("test", {param1: "test"});
+			store.request("test", { param1: "test" });
 		}).toThrowError("EventEmitter: Can not make request on event that has not handler for 'test'.");
 
 		expect(count).toBe(2);
@@ -95,5 +94,4 @@ describe("The MQ.Store", function () {
 		expect(res1).toBe(1);
 		expect(res2).toBe(2);
 	});
-
 });

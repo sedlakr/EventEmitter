@@ -1,4 +1,3 @@
-/*global console, MQ, describe, it, spyOn, EventEmitter*/
 describe("The Emitter", function () {
 	"use strict";
 
@@ -26,7 +25,7 @@ describe("The Emitter", function () {
 		return {
 			cancelBubble: false,
 			preventDefault: function () {},
-			stopPropagation: function () {}
+			stopPropagation: function () {},
 		};
 	}
 
@@ -54,7 +53,7 @@ describe("The Emitter", function () {
 		var emitter = createEmitter(),
 			event = createFakeEvent();
 
-		spyOn(event, "stopPropagation");
+		vi.spyOn(event, "stopPropagation");
 		emitter.interrupt(event, true, true);
 
 		expect(event.stopPropagation).toHaveBeenCalled();
@@ -65,7 +64,7 @@ describe("The Emitter", function () {
 		var emitter = createEmitter(),
 			event = createFakeEvent();
 
-		spyOn(event, "stopPropagation");
+		vi.spyOn(event, "stopPropagation");
 		emitter.interrupt(event, false, true);
 
 		expect(event.stopPropagation).not.toHaveBeenCalled();
@@ -76,7 +75,7 @@ describe("The Emitter", function () {
 		var emitter = createEmitter(),
 			event = createFakeEvent();
 
-		spyOn(event, "preventDefault");
+		vi.spyOn(event, "preventDefault");
 		emitter.interrupt(event, true, true);
 
 		expect(event.preventDefault).toHaveBeenCalled();
@@ -87,7 +86,7 @@ describe("The Emitter", function () {
 		var emitter = createEmitter(),
 			event = createFakeEvent();
 
-		spyOn(event, "preventDefault");
+		vi.spyOn(event, "preventDefault");
 		emitter.interrupt(event, true, false);
 
 		expect(event.preventDefault).not.toHaveBeenCalled();
@@ -111,13 +110,15 @@ describe("The Emitter", function () {
 
 		expect(function () {
 			emitter.in(null);
-		}).toThrowError("EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.");
+		}).toThrowError(
+			"EventEmitter: Can not change context on static method. Use EventEmitter.create() with right context.",
+		);
 	});
 
 	it("Enable debug mode", function () {
 		var emitter = createEmitter();
 
-		spyOn(console, "info");
+		vi.spyOn(console, "info").mockImplementation(() => undefined);
 		emitter.debugMode(true, []);
 		expect(console.info).toHaveBeenCalledWith("EventEmitter debug mode is set to on ");
 	});
@@ -125,7 +126,7 @@ describe("The Emitter", function () {
 	it("Disable debug mode", function () {
 		var emitter = createEmitter();
 
-		spyOn(console, "info");
+		vi.spyOn(console, "info").mockImplementation(() => undefined);
 		emitter.debugMode(false, []);
 		expect(console.info).toHaveBeenCalledWith("EventEmitter debug mode is set to off ");
 	});
@@ -133,7 +134,7 @@ describe("The Emitter", function () {
 	it("Enable simple debug mode", function () {
 		var emitter = createEmitter();
 
-		spyOn(console, "info");
+		vi.spyOn(console, "info").mockImplementation(() => undefined);
 		emitter.debugMode(true, [], true);
 		expect(console.info).toHaveBeenCalledWith("EventEmitter debug mode is set to on with simple mode");
 	});
@@ -141,7 +142,7 @@ describe("The Emitter", function () {
 	it("Disable simple debug mode", function () {
 		var emitter = createEmitter();
 
-		spyOn(console, "info");
+		vi.spyOn(console, "info").mockImplementation(() => undefined);
 		emitter.debugMode(false, []);
 		expect(console.info).toHaveBeenCalledWith("EventEmitter debug mode is set to off ");
 	});

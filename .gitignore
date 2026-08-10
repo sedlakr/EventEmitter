@@ -1,5 +1,2 @@
-bin
 node_modules
-.grunt
-TestsRunner.html
-TestsRunnerPerformance.html
+coverage

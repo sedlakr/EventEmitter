@@ -1,0 +1,6 @@
+dist/
+node_modules/
+coverage/
+# pnpm regenerates this and writes single-quoted YAML; formatting it would churn
+# the whole file on every install.
+pnpm-lock.yaml

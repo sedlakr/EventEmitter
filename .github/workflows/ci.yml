@@ -1,0 +1,72 @@
+name: CI
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        strategy:
+            fail-fast: false
+            matrix:
+                # jsdom supports LTS lines only, so odd-numbered Node releases are out.
+                node: [22, 24]
+
+        steps:
+            - uses: actions/checkout@v5
+
+            # Must come before setup-node: the pnpm cache needs the store, which
+            # only exists once pnpm itself is installed. Version comes from the
+            # packageManager field, so there is one place to bump it.
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: ${{ matrix.node }}
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+
+            - run: pnpm run lint
+
+            - run: pnpm run typecheck
+
+            - run: pnpm run format:check
+
+            - run: pnpm test
+
+            - run: pnpm run build
+
+            # The published artefact is the bundle, not the sources, so prove the
+            # bundle itself still installs the globals and dispatches an event.
+            - name: Smoke test the built bundle
+              run: |
+                  node -e "
+                    require('./dist/mq.min.js');
+                    const emitter = EventEmitter.create({});
+                    let seen = false;
+                    emitter.subscribe('ci', () => { seen = true; });
+                    emitter.event('ci');
+                    if (!seen) { throw new Error('bundled EventEmitter did not dispatch'); }
+                    console.log('bundle OK');
+                  "
+
+            # A duplicate copy must adopt the first one's bus rather than start a
+            # second, which is invisible to the spec suite - that runs one copy.
+            - name: Smoke test duplicate-copy sharing
+              run: |
+                  node -e "
+                    const code = require('fs').readFileSync('./dist/mq.min.js', 'utf8');
+                    (0, eval)(code);
+                    const first = globalThis.EventEmitter;
+                    (0, eval)(code);
+                    if (globalThis.EventEmitter !== first) { throw new Error('second copy replaced the singleton'); }
+                    let seen = false;
+                    globalThis.EventEmitter.create({}).subscribe('dup', () => { seen = true; });
+                    first.create({}).event('dup');
+                    if (!seen) { throw new Error('event did not cross two copies'); }
+                    console.log('shared bus OK');
+                  "
