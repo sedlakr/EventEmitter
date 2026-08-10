@@ -1,6 +1,6 @@
-/*! @sedlak.r/mq@2.0.0-rc.5 */
+/*! @sedlak.r/mq@2.0.0 */
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const require_pure = require("./chunks/pure-Czl8TYjd.js");
+const require_pure = require("./chunks/pure-CZeoa8KZ.js");
 //#region src/index.ts
 /**
 * Default entry point - a backward-compatible superset of the old bundle.

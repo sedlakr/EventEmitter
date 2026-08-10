@@ -1,4 +1,4 @@
-/*! @sedlak.r/mq@2.0.0-rc.5 */
+/*! @sedlak.r/mq@2.0.0 */
 //#region src/context.ts
 /**
 * The sentinel context meaning "no context was set".
@@ -161,7 +161,7 @@ var Store$1 = class {
 		return ctxEvent(this.store, ctx, normalized).length;
 	}
 };
-Store$1.prototype.version = "2.0.0-rc.5";
+Store$1.prototype.version = "2.0.0";
 //#endregion
 //#region src/timer.ts
 /**
@@ -200,7 +200,7 @@ var Timer$1 = class {
 		}
 	}
 };
-Timer$1.prototype.version = "2.0.0-rc.5";
+Timer$1.prototype.version = "2.0.0";
 //#endregion
 //#region src/emitter.ts
 /**
@@ -600,7 +600,7 @@ var Emitter$1 = class Emitter$1 {
 		console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 	}
 };
-Emitter$1.prototype.version = "2.0.0-rc.5";
+Emitter$1.prototype.version = "2.0.0";
 //#endregion
 //#region src/shared.ts
 /**
@@ -645,8 +645,8 @@ function adoptOrPublish(version, create) {
 * single event bus. Nothing readable by application code is added to
 * `globalThis`; import `@sedlak.r/mq` instead if you want the two globals.
 */
-var runtime = adoptOrPublish("2.0.0-rc.5", () => ({
-	version: "2.0.0-rc.5",
+var runtime = adoptOrPublish("2.0.0", () => ({
+	version: "2.0.0",
 	Emitter: Emitter$1,
 	Store: Store$1,
 	StoreRecord: StoreRecord$1,

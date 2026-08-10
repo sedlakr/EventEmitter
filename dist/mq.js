@@ -1,4 +1,4 @@
-/*! @sedlak.r/mq@2.0.0-rc.5 */
+/*! @sedlak.r/mq@2.0.0 */
 (function() {
 	//#region src/context.ts
 	/**
@@ -162,7 +162,7 @@
 			return ctxEvent(this.store, ctx, normalized).length;
 		}
 	};
-	Store$1.prototype.version = "2.0.0-rc.5";
+	Store$1.prototype.version = "2.0.0";
 	//#endregion
 	//#region src/timer.ts
 	/**
@@ -201,7 +201,7 @@
 			}
 		}
 	};
-	Timer$1.prototype.version = "2.0.0-rc.5";
+	Timer$1.prototype.version = "2.0.0";
 	//#endregion
 	//#region src/emitter.ts
 	/**
@@ -601,7 +601,7 @@
 			console.info("EventEmitter debug mode is set to " + (state ? "on" : "off") + " " + (simple ? "with simple mode" : ""));
 		}
 	};
-	Emitter$1.prototype.version = "2.0.0-rc.5";
+	Emitter$1.prototype.version = "2.0.0";
 	//#endregion
 	//#region src/shared.ts
 	/**
@@ -646,8 +646,8 @@
 	* single event bus. Nothing readable by application code is added to
 	* `globalThis`; import `@sedlak.r/mq` instead if you want the two globals.
 	*/
-	var runtime = adoptOrPublish("2.0.0-rc.5", () => ({
-		version: "2.0.0-rc.5",
+	var runtime = adoptOrPublish("2.0.0", () => ({
+		version: "2.0.0",
 		Emitter: Emitter$1,
 		Store: Store$1,
 		StoreRecord: StoreRecord$1,

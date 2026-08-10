@@ -1,6 +1,6 @@
-/*! @sedlak.r/mq@2.0.0-rc.5 */
+/*! @sedlak.r/mq@2.0.0 */
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const require_pure = require("./chunks/pure-Czl8TYjd.js");
+const require_pure = require("./chunks/pure-CZeoa8KZ.js");
 exports.Emitter = require_pure.Emitter;
 exports.EventEmitter = require_pure.EventEmitter;
 exports.Store = require_pure.Store;
